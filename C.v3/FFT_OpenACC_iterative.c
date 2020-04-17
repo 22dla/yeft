@@ -4,11 +4,11 @@
 *	pgcc -acc -ta=multicore -Minfo=accel FFT_OpenACC_iterative.c
 *	pgcc -acc -ta=host -Minfo=accel FFT_OpenACC_iterative.c
 +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-++-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
-
 #include <stdio.h>
 #include <math.h>
 #include <complex.h>
 #include <time.h>
+#include <omp.h>
 
 // #pragma STDC CX_LIMITED_RANGE on
 
@@ -58,6 +58,7 @@ void showMatrix(int nlines, int ncol, cplx a[][ncol])
 
 int main()
 {
+	float begin, time;
 	const int n = 12 * 2048; //Count of lines
 	const int m = 2048;		 //Length of vectors
 
@@ -68,57 +69,59 @@ int main()
 	cplx dataOut[n][m];
 
 	fillInputMatrix(n, m, dataIn);
-	fillOutputMatrix(n, m, dataOut);
+	//fillOutputMatrix(n, m, dataOut);
 	// showMatrix(1, m, dataIn);
 	// showMatrix(n, m, dataOut);
 
-	clock_t begin = clock();
-	#pragma acc parallels loop
-	for (int index = 0; index < n; ++index)
+#pragma acc data copyin(n, m, dataIn) copyout(dataOut)
 	{
-		// bit reversal of the given array
-		for (int j = 0; j < m; ++j)
+		begin = omp_get_wtime();
+#pragma acc parallels loop
+		for (int index = 0; index < n; ++index)
 		{
-			int rev = 0;
-			int x = j;
-			for (int i1 = 0; i1 < log2n; i1++)
+			// bit reversal of the given array
+			for (int j = 0; j < m; ++j)
 			{
-				rev <<= 1;
-				rev |= (x & 1);
-				x >>= 1;
-			}
-			dataOut[index][j] = dataIn[index][rev];
-		}
-		// FFT main function
-		for (int s = 1; s <= log2n; ++s)
-		{
-			int m1 = 1 << s;  // 2 power s
-			int m2 = m1 >> 1; // m2 = m1/2 -1
-			cplx w = 1;
-			cplx wm = cexp(I * (PI / m2));
-			for (int j = 0; j < m2; ++j)
-			{
-
-				for (int k = j; k < m; k += m1)
+				int rev = 0;
+				int x = j;
+				for (int i1 = 0; i1 < log2n; i1++)
 				{
-					// t = twiddle factor
-					cplx t = w * dataOut[index][k + m2];
-					cplx u = dataOut[index][k];
-
-					// similar calculating y[k]
-					dataOut[index][k] = u + t;
-
-					// similar calculating y[k+n/2]
-					dataOut[index][k + m2] = u - t;
+					rev <<= 1;
+					rev |= (x & 1);
+					x >>= 1;
 				}
-				w *= wm;
+				dataOut[index][j] = dataIn[index][rev];
+			}
+			// FFT main function
+			for (int s = 1; s <= log2n; ++s)
+			{
+				int m1 = 1 << s;  // 2 power s
+				int m2 = m1 >> 1; // m2 = m1/2 -1
+				cplx w = 1;
+				cplx wm = cexp(I * (PI / m2));
+				for (int j = 0; j < m2; ++j)
+				{
+
+					for (int k = j; k < m; k += m1)
+					{
+						// t = twiddle factor
+						cplx t = w * dataOut[index][k + m2];
+						cplx u = dataOut[index][k];
+
+						// similar calculating y[k]
+						dataOut[index][k] = u + t;
+
+						// similar calculating y[k+n/2]
+						dataOut[index][k + m2] = u - t;
+					}
+					w *= wm;
+				}
 			}
 		}
-	}
 
-	clock_t end = clock();
-	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-	printf("Time taken by FFT: %f \n", time_spent);
+		time = omp_get_wtime() - begin;
+	}
+	printf("Time taken by FFT: %f \n", time);
 
 	//showMatrix(n, m, dataOut);
 	return 0;
