@@ -64,10 +64,10 @@ int main()
 	const int log2n = log2f(m);
 
 	// Declaring input, output arrays
-	cplx dataIn[1][m];
+	cplx dataIn[n][m];
 	cplx dataOut[n][m];
 
-	fillInputMatrix(1, m, dataIn);
+	fillInputMatrix(n, m, dataIn);
 	fillOutputMatrix(n, m, dataOut);
 	// showMatrix(1, m, dataIn);
 	// showMatrix(n, m, dataOut);
@@ -87,7 +87,7 @@ int main()
 				rev |= (x & 1);
 				x >>= 1;
 			}
-			dataOut[index][j] = dataIn[0][rev];
+			dataOut[index][j] = dataIn[index][rev];
 		}
 		// FFT main function
 		for (int s = 1; s <= log2n; ++s)
