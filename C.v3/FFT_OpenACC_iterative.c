@@ -60,7 +60,7 @@ int main()
 {
 	float begin, time;
 	const int n = 12 * 2048; //Count of lines
-	const int m = 2048;		 //Length of vectors
+	const int m = 2048; //Length of vectors
 
 	const int log2n = log2f(m);
 
@@ -73,25 +73,28 @@ int main()
 	// showMatrix(1, m, dataIn);
 	// showMatrix(n, m, dataOut);
 
+	for (int index = 0; index < n; ++index)
+	{
+		// bit reversal of the given array
+		for (int j = 0; j < m; ++j)
+		{
+			int rev = 0;
+			int x = j;
+			for (int i1 = 0; i1 < log2n; i1++)
+			{
+				rev <<= 1;
+				rev |= (x & 1);
+				x >>= 1;
+			}
+			dataOut[index][j] = dataIn[index][rev];
+		}
+	}
 #pragma acc data copyin(n, m, dataIn) copyout(dataOut)
 	{
 		begin = omp_get_wtime();
 #pragma acc parallels loop
 		for (int index = 0; index < n; ++index)
 		{
-			// bit reversal of the given array
-			for (int j = 0; j < m; ++j)
-			{
-				int rev = 0;
-				int x = j;
-				for (int i1 = 0; i1 < log2n; i1++)
-				{
-					rev <<= 1;
-					rev |= (x & 1);
-					x >>= 1;
-				}
-				dataOut[index][j] = dataIn[index][rev];
-			}
 			// FFT main function
 			for (int s = 1; s <= log2n; ++s)
 			{
