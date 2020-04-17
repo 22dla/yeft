@@ -10,103 +10,116 @@
 #include <complex.h>
 #include <time.h>
 
-#pragma STDC CX_LIMITED_RANGE on
+// #pragma STDC CX_LIMITED_RANGE on
 
 typedef double complex cplx;
 const double PI = 3.1415926536;
 
-int main()
+void fillInputMatrix(int nlines, int ncol, cplx a[][ncol])
 {
-	const int n = 2048;
-	const int m = 2048;
-	// const int l = 50;
-	const int log2n = log2f(m);
-
-	// Declaring input, output arrays
-	cplx dataIn[n][m];
-	cplx dataOut[n][m];
-
-	for (int i = 0; i < n; ++i)
+	for (int i = 0; i < nlines; ++i)
 	{
-		for (int j = 0; j < m; ++j)
+		for (int j = 0; j < ncol; ++j)
 		{
-			if (j < m / 2)
+			if (j < ncol / 2)
 			{
-				dataIn[i][j] = 1; //exp(1 + cos(i) * sin(j));
+				a[i][j] = 1; //exp(1 + cos(i) * sin(j));
 			}
 			else
 			{
-				dataIn[i][j] = 0; //exp(cos(i) * sin(j));
+				a[i][j] = 0; //exp(cos(i) * sin(j));
 			}
-			dataOut[i][j] = 0;
-			// printf("(%.1f, %.1f)", creal(dataIn[i][j]), cimag(dataIn[i][j]));
 		}
-		// printf("\n");
 	}
+}
+void fillOutputMatrix(int nlines, int ncol, cplx a[][ncol])
+{
+	for (int i = 0; i < nlines; ++i)
+	{
+		for (int j = 0; j < ncol; ++j)
+		{
+			a[i][j] = 0; //exp(1 + cos(i) * sin(j));
+		}
+	}
+}
+
+void showMatrix(int nlines, int ncol, cplx a[][ncol])
+{
+	printf("Matrix: \n");
+	for (int i = 0; i < nlines; ++i)
+	{
+		for (int j = 0; j < ncol; ++j)
+		{
+			printf("(%.1f, %.1f) ", creal(a[i][j]), cimag(a[i][j]));
+		}
+		printf("\n");
+	}
+}
+
+int main()
+{
+	const int n = 12 * 2048; //Count of lines
+	const int m = 2048;		 //Length of vectors
+
+	const int log2n = log2f(m);
+
+	// Declaring input, output arrays
+	cplx dataIn[1][m];
+	cplx dataOut[n][m];
+
+	fillInputMatrix(1, m, dataIn);
+	fillOutputMatrix(n, m, dataOut);
+	// showMatrix(1, m, dataIn);
+	// showMatrix(n, m, dataOut);
 
 	clock_t begin = clock();
-
-	// FFT
-#pragma acc declare copyin(dataIn, n, m, log2n) copyout(dataOut)
-#pragma acc parallel loop
-	// #pragma acc kernels
-	// for (int count = 0; count < l; ++count)
-	// {
-	for (int idx = 0; idx < n; ++idx)
+	#pragma acc parallels loop
+	for (int index = 0; index < n; ++index)
 	{
 		// bit reversal of the given array
 		for (int j = 0; j < m; ++j)
 		{
-			int newN = 0;
+			int rev = 0;
 			int x = j;
 			for (int i1 = 0; i1 < log2n; i1++)
 			{
-				newN <<= 1;
-				newN |= (x & 1);
+				rev <<= 1;
+				rev |= (x & 1);
 				x >>= 1;
 			}
-			int rev = newN;
-			dataOut[idx][j] = dataIn[idx][rev];
+			dataOut[index][j] = dataIn[0][rev];
 		}
-		const cplx J = I;
-
+		// FFT main function
 		for (int s = 1; s <= log2n; ++s)
 		{
 			int m1 = 1 << s;  // 2 power s
-			int m2 = m1 >> 1; // m2 = m/2 -1
+			int m2 = m1 >> 1; // m2 = m1/2 -1
 			cplx w = 1;
-			cplx wm = cexp(J * (PI / m2));
+			cplx wm = cexp(I * (PI / m2));
 			for (int j = 0; j < m2; ++j)
 			{
+
 				for (int k = j; k < m; k += m1)
 				{
 					// t = twiddle factor
-					cplx t = w * dataOut[idx][k + m2];
-					cplx u = dataOut[idx][k];
+					cplx t = w * dataOut[index][k + m2];
+					cplx u = dataOut[index][k];
 
 					// similar calculating y[k]
-					dataOut[idx][k] = u + t;
+					dataOut[index][k] = u + t;
 
 					// similar calculating y[k+n/2]
-					dataOut[idx][k + m2] = u - t;
+					dataOut[index][k + m2] = u - t;
 				}
 				w *= wm;
 			}
 		}
 	}
-	// }
 
 	clock_t end = clock();
 	double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
 	printf("Time taken by FFT: %f \n", time_spent);
 
-	/*for (int i = 0; i < n; ++i)
-	{
-		for (int j = 0; j < m; ++j)
-		{
-			printf("(%.1f, %.1f)", creal(dataOut[i][j]), cimag(dataOut[i][j]));
-		}
-		printf("\n");
-	}*/
+	//showMatrix(n, m, dataOut);
 	return 0;
 }
