@@ -6,18 +6,7 @@ macro(init_path)
     set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
     set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/bin) # exe
     set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR}/lib) # library
-    set(ENGINE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/src)
-    set(TASKFLOW_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/3rdparty/taskflow)
 endmacro(init_path)
-
-macro(init_variables)
-    set (PROJECT_LIB_FILES "")
-    set (PROJECT_INCLUDE_DIRS "")
-    set (TARGET_LIB_FILES "")
-    set (TARGET_INCLUDE_DIRS "")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /fp:fast /Ox")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /fp:fast /Ox")
-endmacro(init_variables)
 
 macro(init_openmp)
     option(USE_OPENMP "Use openmp" ON)
@@ -39,17 +28,6 @@ macro(init_openmp)
     endif()
 endmacro(init_openmp)
 
-macro(use_taskflow)
-    list(APPEND TARGET_INCLUDE_DIRS ${TASKFLOW_INCLUDE_DIR})
-endmacro(use_taskflow)
-
-macro(include_and_link)
-    include_directories(${PROJECT_INCLUDE_DIRS})
-    include_directories(${TARGET_INCLUDE_DIRS})
-    link_libraries(${PROJECT_LIB_FILES})
-    link_libraries(${TARGET_LIB_FILES})
-endmacro(include_and_link)
-
 ###########################
 # Build project separately
 ###########################
@@ -69,28 +47,6 @@ macro(init_project proj_name)
     if(NOT_DEFINED_CMAKE_CUDA_ARCHITECTURE)
         set(CMAKE_CUDA_ARCHITECTURES 52 61 70 72 75 CACHE STRING "CUDA architectures" FORCE) 
     endif() 
-endmacro()
-
-macro(add_engine_module module lib)
-    add_subdirectory(${ENGINE_PATH}/src/${module} ${CMAKE_CURRENT_BINARY_DIR}/${module})
-    link_libraries(${lib})
-endmacro()
-
-macro(use_cuda_local target_name)
-    option(USE_CUDA "Use cuda" ON)
-    if (USE_CUDA)
-        enable_language(CUDA)
-        find_package(CUDAToolkit)
-        include_directories(${CUDAToolkit_INCLUDE_DIRS})
-        target_include_directories(${target_name} PUBLIC ${ENGINE_PATH}/3rdparty/cuda/common/inc)
-        link_directories(${CUDAToolkit_LIBRARY_DIR})
-        target_link_libraries(${target_name} PRIVATE CUDA::cudart CUDA::cuda_driver)
-        set_property(TARGET ${target_name} PROPERTY CUDA_ARCHITECTURES 61)
-        set_property(TARGET ${target_name} PROPERTY CUDA_SEPARABLE_COMPILATION ON)
-        set_property(TARGET ${target_name} PROPERTY CUDA_RESOLVE_DEVICE_SYMBOLS ON)
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}; -rdc=true -prec-div=false -prec-sqrt=false -ftz=true -use_fast_math)
-        add_definitions(-DPE_USE_CUDA)
-    endif()
 endmacro()
 
 macro(add_exe exe_name)
