@@ -239,9 +239,6 @@ int main()
 		}
 	}
 
-
-
-
 	auto finish1 = MPI_Wtime();
 	std::cout << std::endl << "FHT Time = " << finish1 - start1 << " seconds." << std::endl;
 
