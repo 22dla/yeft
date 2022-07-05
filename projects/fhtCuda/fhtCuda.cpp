@@ -31,15 +31,31 @@ int main()
 	// Allocate memory on the host
 	std::vector<DataType> h_A(SIZE);
 	std::vector<DataType> h_B(cols);
+	std::vector<std::vector<std::vector<DataType>>> h_B_test(cols);
+	for (int i = 0; i < cols; ++i)
+	{
+		h_B_test[i].resize(cols);
+		for (int i1 = 0; i1 < cols; ++i1)
+			h_B_test[i][i1].resize(cols);
+	}
+
+
 	std::vector<DataType> h_C(cols);
 
 	// input data
-	for (int j = 0; j < cols; ++j)
+	for (int j1 = 0; j1 < cols; ++j1)
 	{
 		//float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		float r = 1.0f;
 
-		h_B[j] = (cols + j + 1 + r) / cols;
+		h_B[j1] = (cols + j1 + 1 + r) / cols;
+		for (int j2 = 0; j2 < cols; ++j2)
+		{
+			for (int j3 = 0; j3 < cols; ++j3)
+			{
+				h_B_test[j1][j2][j3] = (cols + j1 + j2 + 1 + r) / cols;
+			}
+		}
 	}
 
 	// DFT
@@ -52,17 +68,29 @@ int main()
 	// Allocate memory on the device
 	dev_array<DataType> d_A(SIZE);
 	dev_array<DataType> d_B(cols);
+
 	dev_array<DataType> d_C(cols);
+
+	dev_array<dev_array<dev_array<DataType>>> d_B_test(cols);
+	for (int i = 0; i < cols; ++i)
+	{
+		d_B_test.getData()[i].resize(cols);
+		for (int i1 = 0; i1 < cols; ++i1)
+			d_B_test.getData()[i].getData()[i1].resize(cols);
+	}
+
 
 	// Initialize matrices on the host
 	initializeKernelHost(h_A, cols);
 	d_A.set(&h_A[0], SIZE);
 	d_B.set(&h_B[0], cols);
 
+	d_B_test(&h_B_test[0], cols*cols*cols)
+
 	for (int direction = 0; direction < 3; ++direction) {
 		for (int i = 0; i < cols; ++i) {
 			for (int j = 0; j < cols; ++j) {
-				matrixMultiplication(d_A.getData(), d_B.getData(), d_C.getData(), cols);
+				matrixMultiplication(d_A.getData(), d_B.getData(), d_B.getData(), cols);
 			}
 		}
 		cudaDeviceSynchronize();
@@ -72,6 +100,6 @@ int main()
 	cudaEventSynchronize(stop);
 	cudaEventElapsedTime(&time, start, stop);
 
-	printf("Time to generate:  %3.7f s \n", time / 1000.0);
+	printf("Time to generate:  %3.7f sec \n", time / 1000.0);
 	return 0;
 }

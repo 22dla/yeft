@@ -2,6 +2,7 @@
 #define _USE_MATH_DEFINES
 //#define MPIDataType MPI_UNSIGNED_CHAR
 #define MPIDataType MPI_REAL
+#define PARALLEL
 
 #include <iostream>
 #include <algorithm>
@@ -10,9 +11,11 @@
 #include <math.h>
 #include <vector>
 #include <omp.h>
+#include <assert.h>
 
 //using DataType = unsigned __int8;
 using DataType = float;
+using namespace std;
 
 void bitReverse(int *indices, const int length)
 {
@@ -207,7 +210,220 @@ DataType* dht(DataType *a, const std::vector<DataType>& kernel, const int cols)
 	return result;
 }
 
-using namespace std;
+/** 
+* FHT3D(T ***CUBE, const size_t COLS) returns the multidimensional Hartley  
+* transform of an 3-D array using a fast Hartley transform algorithm. The 3-D transform
+* is equivalent to computingthe 1-D transform along each dimension of CUBE.
+*/
+template <typename T>
+void FHT3D(T ***cube, const size_t cols)
+{
+	if (cube == nullptr)
+	{
+		std::cout << "ERROR: FHT3D is not started. 3D array is NULL" << std::endl;
+		return;
+	}
+	// Pre-work
+	// FHT for 3rd axis
+	const int log2 = (int)log2f(cols);
+
+	// Indices for bit reversal operation
+	int *newIndeces = new int[cols];
+	bitReverse(newIndeces, cols);
+
+	// Main work
+	// FHT by X
+	for (int z = 0; z < cols; ++z) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif		
+		for (int y = 0; y < cols; ++y) {
+			{
+				// bitreverse swaping
+				for (int x = 1; x < cols / 2; ++x)
+					std::swap(cube[z][y][x], cube[z][y][newIndeces[x]]);
+
+				// butterfly
+				for (int s = 1; s <= log2; ++s)
+				{
+					int m = powf(2, s);
+					int m2 = m / 2;
+					int m4 = m / 4;
+
+					for (int r = 0; r <= cols - m; r = r + m)
+					{
+						for (int j = 1; j < m4; ++j)
+						{
+							int k = m2 - j;
+							float u = cube[z][y][r + m2 + j];
+							float v = cube[z][y][r + m2 + k];
+							float c = cosf((float)j * M_PI / (float)m2);
+							float s = sinf((float)j * M_PI / (float)m2);
+							cube[z][y][r + m2 + j] = u * c + v * s;
+							cube[z][y][r + m2 + k] = u * s - v * c;
+						}
+						for (int j = 0; j < m2; ++j)
+						{
+							float u = cube[z][y][r + j];
+							float v = cube[z][y][r + j + m2];
+							cube[z][y][r + j] = u + v;
+							cube[z][y][r + j + m2] = u - v;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// FHT by Y
+	for (int z = 0; z < cols; ++z) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+		for (int x = 0; x < cols; ++x) {
+			{
+				// bitreverse swaping
+				for (int y = 1; y < cols / 2; ++y)
+					std::swap(cube[z][y][x], cube[z][newIndeces[y]][x]);
+
+				// butterfly
+				for (int s = 1; s <= log2; ++s)
+				{
+					int m = powf(2, s);
+					int m2 = m / 2;
+					int m4 = m / 4;
+
+					for (int r = 0; r <= cols - m; r = r + m)
+					{
+						for (int j = 1; j < m4; ++j)
+						{
+							int k = m2 - j;
+							float u = cube[z][r + m2 + j][x];
+							float v = cube[z][r + m2 + k][x];
+							float c = cosf((float)j * M_PI / (float)m2);
+							float s = sinf((float)j * M_PI / (float)m2);
+							cube[z][r + m2 + j][x] = u * c + v * s;
+							cube[z][r + m2 + k][x] = u * s - v * c;
+						}
+						for (int j = 0; j < m2; ++j)
+						{
+							float u = cube[z][r + j][x];
+							float v = cube[z][r + j + m2][x];
+							cube[z][r + j][x] = u + v;
+							cube[z][r + j + m2][x] = u - v;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// FHT by Z
+	for (int y = 0; y < cols; ++y) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+		for (int x = 0; x < cols; ++x) {
+			{
+				// bitreverse swaping
+				for (int z = 1; z < cols / 2; ++z)
+					std::swap(cube[z][y][x], cube[newIndeces[z]][y][x]);
+
+				// butterfly
+				for (int s = 1; s <= log2; ++s)
+				{
+					int m = powf(2, s);
+					int m2 = m / 2;
+					int m4 = m / 4;
+
+					for (int r = 0; r <= cols - m; r = r + m)
+					{
+						for (int j = 1; j < m4; ++j)
+						{
+							int k = m2 - j;
+							float u = cube[r + m2 + j][y][x];
+							float v = cube[r + m2 + k][y][x];
+							float c = cosf((float)j * M_PI / (float)m2);
+							float s = sinf((float)j * M_PI / (float)m2);
+							cube[r + m2 + j][y][x] = u * c + v * s;
+							cube[r + m2 + k][y][x] = u * s - v * c;
+						}
+						for (int j = 0; j < m2; ++j)
+						{
+							float u = cube[r + j][y][x];
+							float v = cube[r + j + m2][y][x];
+							cube[r + j][y][x] = u + v;
+							cube[r + j + m2][y][x] = u - v;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Deleting memories
+	delete[] newIndeces;
+}
+
+/**
+* init3Dcube(cube, cols) returns 
+* initialized 3D cube with sizes COLS x COLS x COLS.
+*/
+template <typename T>
+T *** init3Dcube(T ***arr, const size_t cols)
+{
+	// allocate memory
+	arr = new T**[cols];
+	for (size_t i = 0; i < cols; ++i)
+	{
+		arr[i] = new T*[cols];
+		for (size_t j = 0; j < cols; ++j)
+		{
+			arr[i][j] = new T[cols];
+		}
+	}
+
+	// filling arrays
+	for (size_t j1 = 0; j1 < cols; ++j1)
+	{
+		//float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
+		T r = 1.0;
+		for (size_t j2 = 0; j2 < cols; ++j2)
+		{
+			for (size_t j3 = 0; j3 < cols; ++j3)
+			{
+				arr[j1][j2][j3] = (cols + j1 + j2 + j3 + 1 + r) / cols;
+				//cube[j1][j2][j3] = (j3 + cols*j2 + cols*cols*j1)/10.0;
+
+				//std::cout << arr[j1][j2][j3] << "\t";
+			}
+			//std::cout << std::endl;
+		}
+		//std::cout << std::endl;
+	}
+
+	return arr;
+}
+
+/**
+* clear3Dcube(cube, cols) clears
+* 3D cube with sizes COLS x COLS x COLS.
+*/
+template <typename T>
+void clear3Dcube(T ***arr, const size_t cols)
+{
+	if (arr == nullptr) {
+		std::cout << "Warning: Clearing is not started. 3D array is NULL" << std::endl;
+		return;
+	}
+
+	for (int i = 0; i < cols; ++i) {
+		for (int j = 0; j < cols; ++j)
+			delete[] arr[i][j];
+		delete[] arr[i];
+	}
+	delete[] arr;
+}
 
 int main()
 {
@@ -215,37 +431,27 @@ int main()
 	MPI_Init(NULL, NULL);
 
 	// Define global 3D array sizes
-	const int cols = pow(2, 9);
-
-	DataType *a = new DataType[cols];
+	const size_t cols = pow(2, 9);
 
 	// input data
-	for (int j = 0; j < cols; ++j)
-	{
-		//float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
-		float r = 1.0f;
+	//DataType *a = new DataType[cols];
+	//std::vector<DataType> a1(cols);
+	DataType*** cube;
+	cube = init3Dcube<DataType>(cube, cols);
 
-		a[j] = (cols + j + 1 + r) / cols;
-	}
 
-	// FHT
 	auto start1 = MPI_Wtime();
-	for (int direction = 0; direction < 3; ++direction) {
-		for (int i = 0; i < cols; ++i) {
-#pragma omp parallel for
-			for (int j = 0; j < cols; ++j) {
-				fht(a, cols);
-			}
-		}
-	}
-
+	FHT3D<DataType>(cube, cols);
 	auto finish1 = MPI_Wtime();
+
+
 	std::cout << std::endl << "FHT Time = " << finish1 - start1 << " seconds." << std::endl;
 
-	// Deleting memories
-	delete[] a;
-
+	
 	// Finalize the MPI environment.
 	MPI_Finalize();
+
+	// Deleting memories
+	clear3Dcube(cube, cols);
 	return 0;
 }
