@@ -12,6 +12,7 @@
 #include <vector>
 #include <omp.h>
 #include <assert.h>
+#include "time.h"
 
 //using DataType = unsigned __int8;
 using DataType = float;
@@ -143,7 +144,7 @@ void fht(DataType *a, const int M)
 
 void fht(std::vector<DataType>& a)
 {
-	// FHT for 3rd axis
+	// FHT for 1rd axis
 	size_t M = a.size();
 	const int log2 = (int)log2f(M);
 	const DataType m_pi = 3.14159265358979323846f;
@@ -153,9 +154,7 @@ void fht(std::vector<DataType>& a)
 	bitReverse(newIndeces);
 
 	for (int i = 1; i < M / 2; ++i)
-	{
 		std::swap(a[i], a[newIndeces[i]]);
-	}
 
 	for (int s = 1; s <= log2; ++s)
 	{
@@ -431,27 +430,47 @@ int main()
 	MPI_Init(NULL, NULL);
 
 	// Define global 3D array sizes
-	const size_t cols = pow(2, 9);
+	const size_t cols = pow(2, 13);
 
 	// input data
 	//DataType *a = new DataType[cols];
-	//std::vector<DataType> a1(cols);
+	std::vector<DataType> a1(cols);
+	std::vector<std::vector<DataType>> a2(cols);
+	for (size_t j3 = 0; j3 < cols; ++j3)
+	{
+		a2[j3].resize(cols);
+		a1[j3] = (cols + j3 + 2) / cols;
+		for (size_t j4 = 0; j4 < cols; ++j4)
+			a2[j3][j4] = (cols + j3 + j4 + 2) / cols;
+	}
+
+
 	DataType*** cube;
-	cube = init3Dcube<DataType>(cube, cols);
+	//cube = init3Dcube(cube, cols);
 
-
+	clock_t commonStart, commonStop;
+	commonStart = clock();
 	auto start1 = MPI_Wtime();
-	FHT3D<DataType>(cube, cols);
+
+	//FHT3D(cube, cols);
+	for (int i0 = 0; i0 < 2; ++i0)
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif	
+		for (int i = 0; i < cols; ++i)
+			fht(a2[i]);
+
 	auto finish1 = MPI_Wtime();
+	commonStop = clock();
 
-
-	std::cout << std::endl << "FHT Time = " << finish1 - start1 << " seconds." << std::endl;
-
+	printf("FHT Time:\t%3.5f sec \n", finish1 - start1);
+	double time_taken = double(commonStop - commonStart) / double(CLOCKS_PER_SEC);
+	printf("Common time:\t%3.5f sec \n", time_taken);
 	
 	// Finalize the MPI environment.
 	MPI_Finalize();
 
 	// Deleting memories
-	clear3Dcube(cube, cols);
+	//clear3Dcube(cube, cols);
 	return 0;
 }

@@ -14,10 +14,12 @@ __global__ void matrixMultiplicationKernel(DataType* A, DataType* B, DataType* C
 	if (ROW < N && COL < N) {
 		// each thread computes one element of the block sub-matrix
 		for (int i = 0; i < N; i++) {
-			tmpSum += A[ROW * N + i] * B[i * N + COL];
+			//tmpSum += A[ROW * N + i] * B[i];			// for A * b = c (b, c - vectors)
+			tmpSum += A[ROW * N + i] * B[i * N + COL];	// for A * B = C (b, c - matrices)
 		}
 	}
-	C[ROW * N + COL] = tmpSum;
+	//C[ROW] = tmpSum;									// for A * b = c (b, c - vectors)
+	C[ROW * N + COL] = tmpSum;							// for A * B = C (b, c - matrices)
 }
 
 void matrixMultiplication(DataType *A, DataType *B, DataType *C, int N) {

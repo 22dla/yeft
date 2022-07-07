@@ -1,14 +1,16 @@
-﻿#include <iostream>
+﻿#define _USE_MATH_DEFINES
+
+#include <iostream>
 #include <algorithm>
 #include <bitset>
 #include <math.h>
 #include <vector>
+#include "time.h"
 #include "kernel.h"
 #include "dev_array.h"
 
-
 //using DataType = unsigned __int8;
-using DataType = float;
+//using DataType = float;
 
 void initializeKernelHost(std::vector<DataType>& kernel, const int cols)
 {
@@ -22,84 +24,70 @@ void initializeKernelHost(std::vector<DataType>& kernel, const int cols)
 	}
 }
 
-int main()
+//template <typename T>
+void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols)
 {
-	// Define global 3D array sizes
-	const int cols = pow(2, 9);
-	int SIZE = cols * cols;
-
 	// Allocate memory on the host
-	std::vector<DataType> h_A(SIZE);
-	std::vector<DataType> h_B(cols);
-	std::vector<std::vector<std::vector<DataType>>> h_B_test(cols);
-	for (int i = 0; i < cols; ++i)
-	{
-		h_B_test[i].resize(cols);
-		for (int i1 = 0; i1 < cols; ++i1)
-			h_B_test[i][i1].resize(cols);
+	std::vector<DataType> h_A(cols * cols);
+
+	// Allocate memory on the device
+	dev_array<DataType> d_A(cols * cols);	// maatrix for one line
+	dev_array<DataType> d_X(cols * cols);	// one slice
+	dev_array<DataType> d_Y(cols * cols);	// one slice
+
+	// Initialize matrices on the host
+	initializeKernelHost(h_A, cols);
+	// transfer CPU -> GPU
+	d_A.set(&h_A[0], cols * cols);
+
+	for (int direction = 0; direction < 2; ++direction) {
+		// transfer CPU -> GPU
+		d_X.set(&X[0], cols*cols);
+		matrixMultiplication(d_A.getData(), d_X.getData(), d_Y.getData(), cols);
+		// transfer GPU -> CPU
+		d_Y.get(&Y[0], cols*cols);
+		cudaDeviceSynchronize();
 	}
 
+	cudaDeviceSynchronize();
+}
 
-	std::vector<DataType> h_C(cols);
+int main()
+{
+	// Define global ND array sizes
+	const int cols = pow(2, 13);
+
+	std::vector<DataType> h_B(cols * cols);
+	std::vector<DataType> h_C(cols * cols);
 
 	// input data
-	for (int j1 = 0; j1 < cols; ++j1)
+	for (int j1 = 0; j1 < cols*cols; ++j1)
 	{
 		//float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 		float r = 1.0f;
-
 		h_B[j1] = (cols + j1 + 1 + r) / cols;
-		for (int j2 = 0; j2 < cols; ++j2)
-		{
-			for (int j3 = 0; j3 < cols; ++j3)
-			{
-				h_B_test[j1][j2][j3] = (cols + j1 + j2 + 1 + r) / cols;
-			}
-		}
 	}
 
-	// DFT
-	float time;
+	
+	float time1;
+	clock_t commonStart, commonStop;
 	cudaEvent_t start, stop;
+	commonStart = clock();
+
 	cudaEventCreate(&start);
 	cudaEventCreate(&stop);
 	cudaEventRecord(start, 0);
 
-	// Allocate memory on the device
-	dev_array<DataType> d_A(SIZE);
-	dev_array<DataType> d_B(cols);
-
-	dev_array<DataType> d_C(cols);
-
-	dev_array<dev_array<dev_array<DataType>>> d_B_test(cols);
-	for (int i = 0; i < cols; ++i)
-	{
-		d_B_test.getData()[i].resize(cols);
-		for (int i1 = 0; i1 < cols; ++i1)
-			d_B_test.getData()[i].getData()[i1].resize(cols);
-	}
-
-
-	// Initialize matrices on the host
-	initializeKernelHost(h_A, cols);
-	d_A.set(&h_A[0], SIZE);
-	d_B.set(&h_B[0], cols);
-
-	d_B_test(&h_B_test[0], cols*cols*cols)
-
-	for (int direction = 0; direction < 3; ++direction) {
-		for (int i = 0; i < cols; ++i) {
-			for (int j = 0; j < cols; ++j) {
-				matrixMultiplication(d_A.getData(), d_B.getData(), d_B.getData(), cols);
-			}
-		}
-		cudaDeviceSynchronize();
-	}
+	// DHT
+	HT2DCuda(h_B, h_C, cols);
 
 	cudaEventRecord(stop, 0);
 	cudaEventSynchronize(stop);
-	cudaEventElapsedTime(&time, start, stop);
+	cudaEventElapsedTime(&time1, start, stop);
+	commonStop = clock();
 
-	printf("Time to generate:  %3.7f sec \n", time / 1000.0);
+	printf("GPU Time:  \t%3.3f sec \n", time1 / 1000.0);
+	double time_taken = double(commonStop - commonStart) / double(CLOCKS_PER_SEC);
+	printf("Common time:  \t%3.3f sec \n", time_taken);
 	return 0;
 }
