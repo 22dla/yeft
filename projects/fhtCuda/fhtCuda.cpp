@@ -31,7 +31,7 @@ void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const in
 	std::vector<DataType> h_A(cols * cols);
 
 	// Allocate memory on the device
-	dev_array<DataType> d_A(cols * cols);	// maatrix for one line
+	dev_array<DataType> d_A(cols * cols);	// matrix for one line
 	dev_array<DataType> d_X(cols * cols);	// one slice
 	dev_array<DataType> d_Y(cols * cols);	// one slice
 
@@ -40,13 +40,16 @@ void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const in
 	// transfer CPU -> GPU
 	d_A.set(&h_A[0], cols * cols);
 
-	for (int direction = 0; direction < 2; ++direction) {
-		// transfer CPU -> GPU
-		d_X.set(&X[0], cols*cols);
-		matrixMultiplication(d_A.getData(), d_X.getData(), d_Y.getData(), cols);
-		// transfer GPU -> CPU
-		d_Y.get(&Y[0], cols*cols);
-		cudaDeviceSynchronize();
+	for (int i0 = 0; i0 < 200; ++i0)
+	{
+		for (int direction = 0; direction < 2; ++direction) {
+			// transfer CPU -> GPU
+			d_X.set(&X[0], cols*cols);
+			matrixMultiplication(d_A.getData(), d_X.getData(), d_Y.getData(), cols);
+			// transfer GPU -> CPU
+			d_Y.get(&Y[0], cols*cols);
+			cudaDeviceSynchronize();
+		}
 	}
 
 	cudaDeviceSynchronize();
@@ -55,7 +58,7 @@ void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const in
 int main()
 {
 	// Define global ND array sizes
-	const int cols = pow(2, 13);
+	const int cols = pow(2, 11);
 
 	std::vector<DataType> h_B(cols * cols);
 	std::vector<DataType> h_C(cols * cols);
