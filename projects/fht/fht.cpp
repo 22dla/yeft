@@ -20,10 +20,10 @@ using DataType = float;
 
 void bitReverse(std::vector<size_t>* indices)
 {
-    const int log2n = static_cast<int>(log2f((*indices).size()));
+    const int kLog2n = static_cast<int>(log2f((*indices).size()));
 
     // array to store binary number
-    std::vector<bool> binaryNum((*indices).size());
+    std::vector<bool> binary_num((*indices).size());
 
     (*indices)[0] = 0;
     for (int j = 1; j < (*indices).size(); ++j) {
@@ -32,17 +32,17 @@ void bitReverse(std::vector<size_t>* indices)
         int base = j;
         while (base > 0) {
             // storing remainder in binary array
-            binaryNum[count] = static_cast<bool>(base % 2);
+            binary_num[count] = static_cast<bool>(base % 2);
             base /= 2;
             ++count;
         }
-        for (int i = count; i < log2n; ++i)
-            binaryNum[i] = false;
+        for (int i = count; i < kLog2n; ++i)
+            binary_num[i] = false;
 
         int dec_value = 0;
         base = 1;
-        for (int i = log2n - 1; i >= 0; --i) {
-            if (binaryNum[i]) {
+        for (int i = kLog2n - 1; i >= 0; --i) {
+            if (binary_num[i]) {
                 dec_value += base;
             }
             base *= 2;
@@ -55,17 +55,17 @@ void fht1d(std::vector<DataType>* a)
 {
     // FHT for 1rd axis
     size_t M = (*a).size();
-    const int log2 = (int)log2f(M);
-    const DataType m_pi = 3.14159265358979323846f;
+    const int kLog2n = (int)log2f(M);
+    const DataType kPi = 3.14159265358979323846f;
 
     // Indices for bit reversal operation
-    std::vector<size_t> newIndeces(M);
-    bitReverse(&newIndeces);
+    std::vector<size_t> new_indeces(M);
+    bitReverse(&new_indeces);
 
     for (int i = 1; i < M / 2; ++i)
-        std::swap((*a)[i], (*a)[newIndeces[i]]);
+        std::swap((*a)[i], (*a)[new_indeces[i]]);
 
-    for (int s = 1; s <= log2; ++s) {
+    for (int s = 1; s <= kLog2n; ++s) {
         int m = powf(2, s);
         int m2 = m / 2;
         int m4 = m / 4;
@@ -75,8 +75,8 @@ void fht1d(std::vector<DataType>* a)
                 int k = m2 - j;
                 DataType u = (*a)[r + m2 + j];
                 DataType v = (*a)[r + m2 + k];
-                DataType c = cosf(static_cast<DataType>(j) * m_pi / m2);
-                DataType s = sinf(static_cast<DataType>(j) * m_pi / m2);
+                DataType c = cosf(static_cast<DataType>(j) * kPi / m2);
+                DataType s = sinf(static_cast<DataType>(j) * kPi / m2);
                 (*a)[r + m2 + j] = u * c + v * s;
                 (*a)[r + m2 + k] = u * s - v * c;
             }
@@ -92,7 +92,7 @@ void fht1d(std::vector<DataType>* a)
 
 void initializeKernelHost(std::vector<DataType>* kernel, const int cols)
 {
-    const DataType m_pi = 3.14159265358979323846f;
+    const DataType kPi = 3.14159265358979323846f;
     if (kernel->size() != cols * cols) {
         kernel->resize(cols * cols);
     }
@@ -100,7 +100,7 @@ void initializeKernelHost(std::vector<DataType>* kernel, const int cols)
     // Initialize matrices on the host
     for (size_t k = 0; k < cols; ++k) {
         for (size_t j = 0; j < cols; ++j) {
-            (*kernel)[k * cols + j] = cosf(2 * m_pi * k * j / cols) + sinf(2 * m_pi * k * j / cols);
+            (*kernel)[k * cols + j] = cosf(2 * kPi * k * j / cols) + sinf(2 * kPi * k * j / cols);
         }
     }
 }
@@ -317,14 +317,14 @@ int main()
     std::vector<std::vector<DataType>> a2(cols);
     for (size_t j3 = 0; j3 < cols; ++j3) {
         a2[j3].resize(cols);
-        a1[j3] = static_cast<DataType>(20*cols + j3 + 2) / cols;
+        a1[j3] = static_cast<DataType>(20 * cols + j3 + 2) / cols;
         for (size_t j4 = 0; j4 < cols; ++j4)
             a2[j3][j4] = static_cast<DataType>(cols + j3 + j4 + 2) / cols;
     }
 
-    double kernelStart, kernelFinish, commonStart, commonFinish;
-    commonStart = clock() / static_cast<double>(CLOCKS_PER_SEC);
-    kernelStart = MPI_Wtime();
+    double kernel_start, kernel_finish, common_start, common_finish;
+    common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
+    kernel_start = MPI_Wtime();
 
     std::vector<DataType> kernel;
     initializeKernelHost(&kernel, a2[0].size());
@@ -343,11 +343,11 @@ int main()
         }
     }
 
-    kernelFinish = MPI_Wtime();
-    commonFinish = clock() / static_cast<double>(CLOCKS_PER_SEC);
+    kernel_finish = MPI_Wtime();
+    common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
-    showTime(kernelStart, kernelFinish, "FHT time");
-    showTime(commonStart, commonFinish, "Common time");
+    showTime(kernel_start, kernel_finish, "FHT time");
+    showTime(common_start, common_finish, "Common time");
     writeData(a1, std::ios_base::out, "input");
     writeData(test, std::ios_base::app, "output");
 
