@@ -1,0 +1,19 @@
+#include "../ProjectVS2022/Binpow.h"
+#include "gtest/gtest.h"
+
+TEST(Binpow, Small)
+{
+    EXPECT_TRUE(8 == BinPow(2, 3, 19));
+    EXPECT_TRUE(1 == BinPow(3, 0, 19));
+    EXPECT_TRUE(27 == BinPow(3, 3, 100));
+    EXPECT_TRUE(1 == BinPow(3, 4, 20));
+    EXPECT_TRUE(536 == BinPow(4, 8, 1000));
+}
+
+TEST(Binpow, Big)
+{
+    EXPECT_TRUE(1 == BinPow(1, 374834758345LL, 129237));
+    EXPECT_TRUE(719476260 == BinPow(2, 1000000000000000000LL, 1000000007));
+    EXPECT_TRUE(43181159 == BinPow(17239, 1000000000000000LL - 1, 100000000));
+    EXPECT_TRUE(78360 == BinPow(203042322, 82392839238824787LL, 92374));
+}

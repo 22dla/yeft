@@ -3,7 +3,9 @@ set(PROJECT_NAME fhtCuda)
 set(PROJECT_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 project(${PROJECT_NAME})
 
-enable_language(CUDA)
+
+#enable_language(CUDA)
+option(USE_CUDA "Use cuda" ON)
 find_package(CUDA REQUIRED)
 
 add_exe(${PROJECT_NAME})
