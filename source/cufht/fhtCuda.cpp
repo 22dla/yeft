@@ -6,11 +6,11 @@
 #include <math.h>
 #include <vector>
 #include "time.h"
-#include "kernel.h"
-#include "dev_array.h"
+#include <cufht/dev_array.h>
+#include <cufht/dev_array.h>
 
 //using DataType = unsigned __int8;
-//using DataType = float;
+using DataType = float;
 
 void initializeKernelHost(std::vector<DataType>& kernel, const int cols)
 {
