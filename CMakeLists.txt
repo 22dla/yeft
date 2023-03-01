@@ -16,5 +16,5 @@ add_subdirectory(source/fht)
 add_subdirectory(source/cufht)
 add_subdirectory(tests)
 
-set(YEFT_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(YEFT_INCLUDE_DIRS "${YEFT_INCLUDE_DIRS}" CACHE STRING "RapidHT include dirs" FORCE)
+set(RAPIDHT_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(RAPIDHT_INCLUDE_DIRS "${RAPIDHT_INCLUDE_DIRS}" CACHE STRING "RapidHT include dirs" FORCE)
