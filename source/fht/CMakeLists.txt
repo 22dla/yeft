@@ -1,6 +1,5 @@
-cmake_minimum_required(VERSION 3.21)
-set(PROJECT_NAME fht)
-project(${PROJECT_NAME})
+set(RAPIDHT_LIBRARIES coreht)
+project(${RAPIDHT_LIBRARIES})
 
 find_package(OpenMP)
 find_package(MPI)
@@ -11,11 +10,15 @@ IF(OPENMP_FOUND)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 ENDIF()
 
-add_exe(${PROJECT_NAME})
-
-message("${MPI_INCLUDE_PATH}")
 include_directories(SYSTEM ${MPI_INCLUDE_PATH})
-target_include_directories( ${PROJECT_NAME} PRIVATE ${RAPIDHT_INCLUDE_DIRS})
-set_target_properties (${PROJECT_NAME} PROPERTIES FOLDER Demos)
+
+
+
+add_exe(${RAPIDHT_LIBRARIES})
+
+
+target_include_directories(${RAPIDHT_LIBRARIES} PRIVATE ${RAPIDHT_INCLUDE_DIRS})
+target_link_libraries(${RAPIDHT_LIBRARIES} PRIVATE ${MPI_C_LIBRARIES})
+set_target_properties(${RAPIDHT_LIBRARIES} PROPERTIES FOLDER Demos)
 
 	

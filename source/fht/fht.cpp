@@ -1,11 +1,7 @@
-﻿#include <fht/fht.h>
+﻿#include <fht.h>
 
 #include <fstream>
 #include <iostream>
-#include <algorithm>
-#include <math.h>
-#include <mpi.h>
-#include <omp.h>
 
 void bitReverse(std::vector<size_t>* indices)
 {

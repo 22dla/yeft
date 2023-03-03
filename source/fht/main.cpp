@@ -1,4 +1,5 @@
-#include <fht/fht.h>
+#include <fht.h>
+#include <iostream>
 
 int main()
 {
@@ -44,8 +45,8 @@ int main()
 
     showTime(kernel_start, kernel_finish, "FHT time");
     showTime(common_start, common_finish, "Common time");
-    writeData(a1, std::ios_base::out, "input");
-    writeData(test, std::ios_base::app, "output");
+    // writeData(a1, std::ios_base::out, "input");
+    // writeData(test, std::ios_base::app, "output");
 
     // Finalize the MPI environment.
     MPI_Finalize();
