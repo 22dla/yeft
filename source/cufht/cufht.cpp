@@ -13,7 +13,7 @@ void initializeKernelHost(std::vector<DataType>& kernel, const int cols)
 }
 
 // template <typename T>
-void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols)
+void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols, const int image_num)
 {
     // Allocate memory on the host
     std::vector<DataType> h_A(cols * cols);
@@ -28,10 +28,10 @@ void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const in
     // transfer CPU -> GPU
     d_A.set(&h_A[0], cols * cols);
 
-    for (int i0 = 0; i0 < 200; ++i0) {
+    for (int i0 = 0; i0 < image_num; ++i0) {
         for (int direction = 0; direction < 2; ++direction) {
             // transfer CPU -> GPU
-            d_X.set(&X[0], cols * cols);
+            d_X.set(&X[i0 * cols * cols], cols * cols);
             matrixMultiplication(d_A.getData(), d_X.getData(), d_Y.getData(), cols);
             // transfer GPU -> CPU
             d_Y.get(&Y[0], cols * cols);

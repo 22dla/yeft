@@ -1,10 +1,10 @@
 #define HASH_SIZE 128
 #define PARALLEL
 
-#include <fht.h>
 #include <iostream>
+#include <realfft.h>
 
-using Image = std::vector<std::vector<DataType>>;
+using Image = std::vector<std::vector<Complex>>;
 
 int main(int argc, char* argv[])
 {
@@ -46,6 +46,9 @@ int main(int argc, char* argv[])
         a3[j1].resize(cols);
         for (size_t j2 = 0; j2 < cols; ++j2) {
             a3[j1][j2].resize(rows);
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
             for (size_t j3 = 0; j3 < cols; ++j3) {
                 a3[j1][j2][j3] = static_cast<DataType>(rows + j1 + j2 + j3 + 2) / (cols * image_num);
             }
@@ -55,26 +58,20 @@ int main(int argc, char* argv[])
     double common_start, common_finish;
     common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
-    //std::vector<DataType> kernel;
-    //initializeKernelHost(&kernel, a2[0].size());
-    //std::vector<DataType> test;
-
     for (int i0 = 0; i0 < image_num; ++i0) {
-        for (int direction = 0; direction < 1; ++direction) {
+        for (int direction = 0; direction < 2; ++direction) {
 #ifdef PARALLEL
 #pragma omp parallel for
 #endif
             for (int i = 0; i < cols; ++i) {
-                fht1d(&a3[i0][i]);
-                //test = dht1d(a2[i], kernel);
+                //fft1dv1(&a3[i0][i]);
+                fft1dv2(&a3[i0][i]);
             }
         }
     }
 
     common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
     showTime(common_start, common_finish, "Common time");
-    // writeData(a1, std::ios_base::out, "input");
-    // writeData(test, std::ios_base::app, "output");
 
     return 0;
 }

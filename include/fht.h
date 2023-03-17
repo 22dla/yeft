@@ -1,8 +1,7 @@
-#define HASH_SIZE 128
 #define _USE_MATH_DEFINES
 // #define MPIDataType MPI_UNSIGNED_CHAR
-#define MPIDataType MPI_REAL
-// #define PARALLEL
+// #define MPIDataType MPI_REAL
+
 
 #include "time.h"
 #include <algorithm>

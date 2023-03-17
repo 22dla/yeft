@@ -13,4 +13,4 @@
 using DataType = float;
 
 void initializeKernelHost(std::vector<DataType>& kernel, const int cols);
-void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols);
+void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols, const int image_num);
