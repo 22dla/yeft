@@ -1,7 +1,39 @@
 ﻿#include <fht.h>
-
 #include <fstream>
 #include <iostream>
+
+class Image {
+public:
+    Image(const std::vector<std::vector<float>>& other)
+    { // конструктор копирования
+        data = other;
+    }
+
+    int rows() const
+    {
+        return data[0].size();
+    }
+    int cols() const
+    {
+        return data.size();
+    }
+    float operator()(int x, int y)
+    {
+        return data[y][x];
+    }
+    // return coloumn
+    std::vector<float>& operator()(int y)
+    {
+        return data[y];
+    }
+
+    void transpose()
+    {
+    }
+
+private:
+    std::vector<std::vector<float>> data;
+};
 
 void bitReverse(std::vector<size_t>* indices)
 {
@@ -36,12 +68,44 @@ void bitReverse(std::vector<size_t>* indices)
     }
 }
 
-void fht1d(std::vector<DataType>* a)
+void initializeKernelHost(std::vector<float>* kernel, const int cols)
+{
+    const float kPi = 3.14159265358979323846f;
+    if (kernel->size() != cols * cols) {
+        kernel->resize(cols * cols);
+    }
+
+    // Initialize matrices on the host
+    for (size_t k = 0; k < cols; ++k) {
+        for (size_t j = 0; j < cols; ++j) {
+            (*kernel)[k * cols + j] = cosf(2 * kPi * k * j / cols) + sinf(2 * kPi * k * j / cols);
+        }
+    }
+}
+
+// test function
+std::vector<float> dht1d(const std::vector<float>& a, const std::vector<float>& kernel)
+{
+    std::vector<float> result(a.size());
+
+    for (size_t i = 0; i < a.size(); i++)
+        for (size_t j = 0; j < a.size(); j++)
+            result[i] += (kernel[i * a.size() + j] * a[j]);
+
+    // RVO works
+    return result;
+}
+
+void transpose(std::vector<std::vector<float>>* image)
+{
+}
+
+void FDHT1D(std::vector<float>* a)
 {
     // FHT for 1rd axis
     size_t M = (*a).size();
     const int kLog2n = (int)log2f(M);
-    const DataType kPi = 3.14159265358979323846f;
+    const float kPi = 3.14159265358979323846f;
 
     // Indices for bit reversal operation
     std::vector<size_t> new_indeces(M);
@@ -58,16 +122,16 @@ void fht1d(std::vector<DataType>* a)
         for (size_t r = 0; r <= M - m; r = r + m) {
             for (size_t j = 1; j < m4; ++j) {
                 int k = m2 - j;
-                DataType u = (*a)[r + m2 + j];
-                DataType v = (*a)[r + m2 + k];
-                DataType c = cosf(static_cast<DataType>(j) * kPi / m2);
-                DataType s = sinf(static_cast<DataType>(j) * kPi / m2);
+                float u = (*a)[r + m2 + j];
+                float v = (*a)[r + m2 + k];
+                float c = cosf(static_cast<float>(j) * kPi / m2);
+                float s = sinf(static_cast<float>(j) * kPi / m2);
                 (*a)[r + m2 + j] = u * c + v * s;
                 (*a)[r + m2 + k] = u * s - v * c;
             }
             for (size_t j = 0; j < m2; ++j) {
-                DataType u = (*a)[r + j];
-                DataType v = (*a)[r + j + m2];
+                float u = (*a)[r + j];
+                float v = (*a)[r + j + m2];
                 (*a)[r + j] = u + v;
                 (*a)[r + j + m2] = u - v;
             }
@@ -75,82 +139,31 @@ void fht1d(std::vector<DataType>* a)
     }
 }
 
-void initializeKernelHost(std::vector<DataType>* kernel, const int cols)
+void FDHT2D(std::vector<std::vector<float>>* image)
 {
-    const DataType kPi = 3.14159265358979323846f;
-    if (kernel->size() != cols * cols) {
-        kernel->resize(cols * cols);
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < image->size(); ++i) {
+        FDHT1D(&(*image)[i]);
     }
 
-    // Initialize matrices on the host
-    for (size_t k = 0; k < cols; ++k) {
-        for (size_t j = 0; j < cols; ++j) {
-            (*kernel)[k * cols + j] = cosf(2 * kPi * k * j / cols) + sinf(2 * kPi * k * j / cols);
-        }
+    transpose(image);
+
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < image->size(); ++i) {
+        FDHT1D(&(*image)[i]);
     }
-}
-
-std::vector<DataType> dht1d(const std::vector<DataType>& a, const std::vector<DataType>& kernel)
-{
-    std::vector<DataType> result(a.size());
-
-    for (size_t i = 0; i < a.size(); i++)
-        for (size_t j = 0; j < a.size(); j++)
-            result[i] += (kernel[i * a.size() + j] * a[j]);
-
-    // RVO works
-    return result;
-}
-
-void showTime(double startTime, double finishTime, std::string message)
-{
-    std::cout << message + ":\t" << finishTime - startTime << " sec" << std::endl;
-}
-
-template <typename T>
-void writeData(const std::vector<T>& vec, int mode,
-    const std::string& name, const std::string& path)
-{
-    std::fstream file;
-    file.open(path, mode);
-
-    switch (mode) {
-    case std::ios_base::out: {
-
-        file << ";";
-        for (int i = 0; i < vec.size(); ++i) {
-            file << i << ";";
-        }
-
-        file << std::endl
-             << name << ";";
-        for (int i = 0; i < vec.size(); ++i) {
-            file << vec[i] << ";";
-        }
-        break;
-    }
-    case std::ios_base::app: {
-        file << std::endl
-             << name << ";";
-        for (int i = 0; i < vec.size(); ++i) {
-            file << vec[i] << ";";
-        }
-        break;
-    }
-    default:
-        break;
-    }
-
-    file.close();
 }
 
 /**
- * FHT3D(T ***CUBE, const size_t COLS) returns the multidimensional Hartley
+ * FHT3D(float ***CUBE, const size_t COLS) returns the multidimensional Hartley
  * transform of an 3-D array using a fast Hartley transform algorithm. The 3-D transform
  * is equivalent to computingthe 1-D transform along each dimension of CUBE.
  */
-template <typename T>
-void FHT3D(T*** cube, const size_t cols)
+void DFHT3D(float*** cube, const int cols)
 {
     if (cube == nullptr) {
         std::cout << "ERROR: FHT3D is not started. 3D array is NULL" << std::endl;
@@ -161,8 +174,8 @@ void FHT3D(T*** cube, const size_t cols)
     const int log2 = (int)log2f(cols);
 
     // Indices for bit reversal operation
-    int* newIndeces = new int[cols];
-    bitReverse(newIndeces, cols);
+    std::vector<size_t> new_indeces(cols);
+    bitReverse(&new_indeces);
 
     // Main work
     // FHT by X
@@ -174,7 +187,7 @@ void FHT3D(T*** cube, const size_t cols)
             {
                 // bitreverse swaping
                 for (int x = 1; x < cols / 2; ++x)
-                    std::swap(cube[z][y][x], cube[z][y][newIndeces[x]]);
+                    std::swap(cube[z][y][x], cube[z][y][new_indeces[x]]);
 
                 // butterfly
                 for (int s = 1; s <= log2; ++s) {
@@ -213,7 +226,7 @@ void FHT3D(T*** cube, const size_t cols)
             {
                 // bitreverse swaping
                 for (int y = 1; y < cols / 2; ++y)
-                    std::swap(cube[z][y][x], cube[z][newIndeces[y]][x]);
+                    std::swap(cube[z][y][x], cube[z][new_indeces[y]][x]);
 
                 // butterfly
                 for (int s = 1; s <= log2; ++s) {
@@ -252,7 +265,7 @@ void FHT3D(T*** cube, const size_t cols)
             {
                 // bitreverse swaping
                 for (int z = 1; z < cols / 2; ++z)
-                    std::swap(cube[z][y][x], cube[newIndeces[z]][y][x]);
+                    std::swap(cube[z][y][x], cube[new_indeces[z]][y][x]);
 
                 // butterfly
                 for (int s = 1; s <= log2; ++s) {
@@ -281,7 +294,4 @@ void FHT3D(T*** cube, const size_t cols)
             }
         }
     }
-
-    // Deleting memories
-    delete[] newIndeces;
 }
