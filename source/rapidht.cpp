@@ -1,39 +1,12 @@
-﻿#include <rapidht.h>
+﻿#include <algorithm>
+#include <bitset>
 #include <fstream>
+#include <immintrin.h>
 #include <iostream>
-
-class Image {
-public:
-    Image(const std::vector<std::vector<float>>& other)
-    { // copy constructor
-        data = other;
-    }
-
-    int rows() const
-    {
-        return data[0].size();
-    }
-    int cols() const
-    {
-        return data.size();
-    }
-    float operator()(int x, int y)
-    {
-        return data[y][x];
-    }
-    // return coloumn
-    std::vector<float>& operator()(int y)
-    {
-        return data[y];
-    }
-
-    void transpose()
-    {
-    }
-
-private:
-    std::vector<std::vector<float>> data;
-};
+#include <math.h>
+#include <omp.h>
+#include <rapidht.h>
+#include <utilities.h>
 
 void bit_reverse(std::vector<int>* indices_ptr)
 {
@@ -105,13 +78,87 @@ void transpose(std::vector<std::vector<T>>* matrix_ptr)
     const size_t rows = matrix.size();
     const size_t cols = matrix[0].size();
 
-    for (size_t i = 0; i < rows; i++) {
-        for (size_t j = i + 1; j < cols; j++) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < rows; ++i) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+        for (int j = i + 1; j < cols; ++j) {
             std::swap(matrix[i][j], matrix[j][i]);
         }
     }
 }
 
+void transpose_simple(float* matrix, const int rows, const int cols)
+{
+    if (matrix == nullptr) {
+        throw std::invalid_argument("The pointer to matrix is null.");
+    }
+
+    if (rows == cols) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+        // Square matrix
+        for (int i = 0; i < rows; ++i) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+            for (int j = i + 1; j < cols; ++j) {
+                std::swap(matrix[i * cols + j], matrix[j * cols + i]);
+            }
+        }
+    } else {
+        // Non-square matrix
+        std::vector<float> transposed(rows * cols);
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+        for (int i = 0; i < rows; ++i) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+            for (int j = 0; j < cols; ++j) {
+                transposed[j * rows + i] = matrix[i * cols + j];
+            }
+        }
+        std::memcpy(matrix, transposed.data(), sizeof(float) * rows * cols);
+    }
+}
+
+void series1d(std::vector<std::vector<float>>* image_ptr)
+{
+    std::vector<std::vector<float>>& image = *image_ptr;
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < image.size(); ++i) {
+        FDHT1D(&image[i]);
+    }
+}
+
+void series1d(float* image_ptr, const int rows, const int cols)
+{
+    if (image_ptr == nullptr) {
+        throw std::invalid_argument("The pointer to image is null.");
+    }
+    if (rows < 0 || cols < 0) {
+        throw std::invalid_argument("Error: rows, and cols must be non-negative");
+    }
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < rows; ++i) {
+        FDHT1D(image_ptr + i * cols, cols);
+    }
+}
+
+/**
+ * FDHT1D(std::vector<float>* vector_ptr) returns the Hartley
+ * transform of an 1D array using a fast Hartley transform algorithm.
+ */
 void FDHT1D(std::vector<float>* vector_ptr)
 {
     auto& vec = *vector_ptr;
@@ -124,8 +171,9 @@ void FDHT1D(std::vector<float>* vector_ptr)
     std::vector<int> new_indeces(M);
     bit_reverse(&new_indeces);
 
-    for (int i = 1; i < M / 2; ++i)
+    for (int i = 1; i < M / 2; ++i) {
         std::swap(vec[i], vec[new_indeces[i]]);
+    }
 
     for (int s = 1; s <= kLog2n; ++s) {
         int m = powf(2, s);
@@ -152,160 +200,117 @@ void FDHT1D(std::vector<float>* vector_ptr)
     }
 }
 
-void FDHT2D(std::vector<std::vector<float>>* image_ptr)
+/**
+ * FDHT1D(float* vec, const int length) returns the Hartley
+ * transform of an 1D array using a fast Hartley transform algorithm.
+ */
+void FDHT1D(float* vec, const int length)
 {
-    std::vector<std::vector<float>>& image = *image_ptr;
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < image.size(); ++i) {
-        FDHT1D(&image[i]);
+    if (vec == nullptr) {
+        throw std::invalid_argument("The pointer to vector is null.");
+    }
+    if (length < 0) {
+        throw std::invalid_argument("Error: length must be non-negative");
     }
 
-    transpose(&image);
+    // FHT for 1rd axis
+    const int kLog2n = (int)log2f(length);
+    const float kPi = 3.14159265358979323846f;
 
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < image.size(); ++i) {
-        FDHT1D(&image[i]);
+    // Indices for bit reversal operation
+    std::vector<int> new_indeces(length);
+    bit_reverse(&new_indeces);
+
+    for (int i = 1; i < length / 2; ++i) {
+        std::swap(vec[i], vec[new_indeces[i]]);
+    }
+
+    for (int s = 1; s <= kLog2n; ++s) {
+        int m = powf(2, s);
+        int m2 = m / 2;
+        int m4 = m / 4;
+
+        for (size_t r = 0; r <= length - m; r = r + m) {
+            for (size_t j = 1; j < m4; ++j) {
+                int k = m2 - j;
+                float u = vec[r + m2 + j];
+                float v = vec[r + m2 + k];
+                float c = cosf(static_cast<float>(j) * kPi / m2);
+                float s = sinf(static_cast<float>(j) * kPi / m2);
+                vec[r + m2 + j] = u * c + v * s;
+                vec[r + m2 + k] = u * s - v * c;
+            }
+            for (size_t j = 0; j < m2; ++j) {
+                float u = vec[r + j];
+                float v = vec[r + j + m2];
+                vec[r + j] = u + v;
+                vec[r + j + m2] = u - v;
+            }
+        }
     }
 }
 
 /**
- * FHT3D(float ***CUBE, const size_t COLS) returns the multidimensional Hartley
- * transform of an 3-D array using a fast Hartley transform algorithm. The 3-D transform
- * is equivalent to computingthe 1-D transform along each dimension of CUBE.
+ * FHT2D(std::vector<std::vector<float>>* image_ptr) returns the Hartley
+ * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
+ * is equivalent to computing the 1D transform along each dimension of image.
  */
-void DFHT3D(float*** cube, const int cols)
+void FDHT2D(std::vector<std::vector<float>>* image_ptr)
 {
-    if (cube == nullptr) {
-        std::cout << "ERROR: FHT3D is not started. 3D array is NULL" << std::endl;
-        return;
+    auto& image = *image_ptr;
+
+    // 1D transforms along X dimension
+    PROFILE(X, {
+        series1d(&image);
+    });
+
+    PROFILE(TRANSPOSE, {
+        transpose(&image);
+    });
+
+    // 1D transforms along Y dimension
+    PROFILE(Y, {
+        series1d(&image);
+    });
+
+    PROFILE(TRANSPOSE2, {
+        transpose(&image);
+    });
+}
+
+/**
+ * FHT2D(float* image_ptr, const int rows) returns the Hartley
+ * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
+ * is equivalent to computing the 1D transform along each dimension of image.
+ */
+void FDHT2D(float* image_ptr, int rows, int cols)
+{
+    if (image_ptr == nullptr) {
+        throw std::invalid_argument("The pointer to image is null.");
     }
-    // Pre-work
-    // FHT for 3rd axis
-    const int log2 = (int)log2f(cols);
-
-    // Indices for bit reversal operation
-    std::vector<int> new_indeces(cols);
-    bit_reverse(&new_indeces);
-
-    // Main work
-    // FHT by X
-    for (int z = 0; z < cols; ++z) {
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-        for (int y = 0; y < cols; ++y) {
-            {
-                // bitreverse swaping
-                for (int x = 1; x < cols / 2; ++x)
-                    std::swap(cube[z][y][x], cube[z][y][new_indeces[x]]);
-
-                // butterfly
-                for (int s = 1; s <= log2; ++s) {
-                    int m = powf(2, s);
-                    int m2 = m / 2;
-                    int m4 = m / 4;
-
-                    for (int r = 0; r <= cols - m; r = r + m) {
-                        for (int j = 1; j < m4; ++j) {
-                            int k = m2 - j;
-                            float u = cube[z][y][r + m2 + j];
-                            float v = cube[z][y][r + m2 + k];
-                            float c = cosf((float)j * M_PI / (float)m2);
-                            float s = sinf((float)j * M_PI / (float)m2);
-                            cube[z][y][r + m2 + j] = u * c + v * s;
-                            cube[z][y][r + m2 + k] = u * s - v * c;
-                        }
-                        for (int j = 0; j < m2; ++j) {
-                            float u = cube[z][y][r + j];
-                            float v = cube[z][y][r + j + m2];
-                            cube[z][y][r + j] = u + v;
-                            cube[z][y][r + j + m2] = u - v;
-                        }
-                    }
-                }
-            }
-        }
+    if (rows < 0 || cols < 0) {
+        throw std::invalid_argument("Error: rows, and cols must be non-negative");
     }
 
-    // FHT by Y
-    for (int z = 0; z < cols; ++z) {
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-        for (int x = 0; x < cols; ++x) {
-            {
-                // bitreverse swaping
-                for (int y = 1; y < cols / 2; ++y)
-                    std::swap(cube[z][y][x], cube[z][new_indeces[y]][x]);
+    // write_matrix_to_csv(image_ptr, rows, cols, "matrix1.txt");
 
-                // butterfly
-                for (int s = 1; s <= log2; ++s) {
-                    int m = powf(2, s);
-                    int m2 = m / 2;
-                    int m4 = m / 4;
+    // 1D transforms along X dimension
+    PROFILE(X, {
+        series1d(image_ptr, rows, cols);
+    });
 
-                    for (int r = 0; r <= cols - m; r = r + m) {
-                        for (int j = 1; j < m4; ++j) {
-                            int k = m2 - j;
-                            float u = cube[z][r + m2 + j][x];
-                            float v = cube[z][r + m2 + k][x];
-                            float c = cosf((float)j * M_PI / (float)m2);
-                            float s = sinf((float)j * M_PI / (float)m2);
-                            cube[z][r + m2 + j][x] = u * c + v * s;
-                            cube[z][r + m2 + k][x] = u * s - v * c;
-                        }
-                        for (int j = 0; j < m2; ++j) {
-                            float u = cube[z][r + j][x];
-                            float v = cube[z][r + j + m2][x];
-                            cube[z][r + j][x] = u + v;
-                            cube[z][r + j + m2][x] = u - v;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    PROFILE(Transpose1, {
+        transpose_simple(image_ptr, rows, cols);
+    });
 
-    // FHT by Z
-    for (int y = 0; y < cols; ++y) {
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-        for (int x = 0; x < cols; ++x) {
-            {
-                // bitreverse swaping
-                for (int z = 1; z < cols / 2; ++z)
-                    std::swap(cube[z][y][x], cube[new_indeces[z]][y][x]);
+    // 1D transforms along Y dimension
+    PROFILE(Y, {
+        series1d(image_ptr, cols, rows);
+    });
 
-                // butterfly
-                for (int s = 1; s <= log2; ++s) {
-                    int m = powf(2, s);
-                    int m2 = m / 2;
-                    int m4 = m / 4;
+    PROFILE(Transpose2, {
+        transpose_simple(image_ptr, cols, rows);
+    });
 
-                    for (int r = 0; r <= cols - m; r = r + m) {
-                        for (int j = 1; j < m4; ++j) {
-                            int k = m2 - j;
-                            float u = cube[r + m2 + j][y][x];
-                            float v = cube[r + m2 + k][y][x];
-                            float c = cosf((float)j * M_PI / (float)m2);
-                            float s = sinf((float)j * M_PI / (float)m2);
-                            cube[r + m2 + j][y][x] = u * c + v * s;
-                            cube[r + m2 + k][y][x] = u * s - v * c;
-                        }
-                        for (int j = 0; j < m2; ++j) {
-                            float u = cube[r + j][y][x];
-                            float v = cube[r + j + m2][y][x];
-                            cube[r + j][y][x] = u + v;
-                            cube[r + j + m2][y][x] = u - v;
-                        }
-                    }
-                }
-            }
-        }
-    }
+    // write_matrix_to_csv(image_ptr, rows, cols, "matrix2.txt");
 }
