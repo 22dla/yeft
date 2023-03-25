@@ -1,11 +1,11 @@
-﻿#include <fht.h>
+﻿#include <rapidht.h>
 #include <fstream>
 #include <iostream>
 
 class Image {
 public:
     Image(const std::vector<std::vector<float>>& other)
-    { // конструктор копирования
+    { // copy constructor
         data = other;
     }
 
@@ -35,15 +35,16 @@ private:
     std::vector<std::vector<float>> data;
 };
 
-void bitReverse(std::vector<size_t>* indices)
+void bit_reverse(std::vector<int>* indices_ptr)
 {
-    const int kLog2n = static_cast<int>(log2f((*indices).size()));
+    std::vector<int>& indices = *indices_ptr;
+    const int kLog2n = static_cast<int>(log2f(indices.size()));
 
     // array to store binary number
-    std::vector<bool> binary_num((*indices).size());
+    std::vector<bool> binary_num(indices.size());
 
-    (*indices)[0] = 0;
-    for (int j = 1; j < (*indices).size(); ++j) {
+    indices[0] = 0;
+    for (int j = 1; j < indices.size(); ++j) {
         // counter for binary array
         size_t count = 0;
         int base = j;
@@ -64,11 +65,11 @@ void bitReverse(std::vector<size_t>* indices)
             }
             base *= 2;
         }
-        (*indices)[j] = dec_value;
+        indices[j] = dec_value;
     }
 }
 
-void initializeKernelHost(std::vector<float>* kernel, const int cols)
+void initialize_kernel_host(std::vector<float>* kernel, const int cols)
 {
     const float kPi = 3.14159265358979323846f;
     if (kernel->size() != cols * cols) {
@@ -84,7 +85,7 @@ void initializeKernelHost(std::vector<float>* kernel, const int cols)
 }
 
 // test function
-std::vector<float> dht1d(const std::vector<float>& a, const std::vector<float>& kernel)
+std::vector<float> DHT1D(const std::vector<float>& a, const std::vector<float>& kernel)
 {
     std::vector<float> result(a.size());
 
@@ -96,23 +97,35 @@ std::vector<float> dht1d(const std::vector<float>& a, const std::vector<float>& 
     return result;
 }
 
-void transpose(std::vector<std::vector<float>>* image)
+template <typename T>
+void transpose(std::vector<std::vector<T>>* matrix_ptr)
 {
+    std::vector<std::vector<T>>& matrix = *matrix_ptr;
+
+    const size_t rows = matrix.size();
+    const size_t cols = matrix[0].size();
+
+    for (size_t i = 0; i < rows; i++) {
+        for (size_t j = i + 1; j < cols; j++) {
+            std::swap(matrix[i][j], matrix[j][i]);
+        }
+    }
 }
 
-void FDHT1D(std::vector<float>* a)
+void FDHT1D(std::vector<float>* vector_ptr)
 {
+    auto& vec = *vector_ptr;
     // FHT for 1rd axis
-    size_t M = (*a).size();
+    size_t M = vec.size();
     const int kLog2n = (int)log2f(M);
     const float kPi = 3.14159265358979323846f;
 
     // Indices for bit reversal operation
-    std::vector<size_t> new_indeces(M);
-    bitReverse(&new_indeces);
+    std::vector<int> new_indeces(M);
+    bit_reverse(&new_indeces);
 
     for (int i = 1; i < M / 2; ++i)
-        std::swap((*a)[i], (*a)[new_indeces[i]]);
+        std::swap(vec[i], vec[new_indeces[i]]);
 
     for (int s = 1; s <= kLog2n; ++s) {
         int m = powf(2, s);
@@ -122,39 +135,40 @@ void FDHT1D(std::vector<float>* a)
         for (size_t r = 0; r <= M - m; r = r + m) {
             for (size_t j = 1; j < m4; ++j) {
                 int k = m2 - j;
-                float u = (*a)[r + m2 + j];
-                float v = (*a)[r + m2 + k];
+                float u = vec[r + m2 + j];
+                float v = vec[r + m2 + k];
                 float c = cosf(static_cast<float>(j) * kPi / m2);
                 float s = sinf(static_cast<float>(j) * kPi / m2);
-                (*a)[r + m2 + j] = u * c + v * s;
-                (*a)[r + m2 + k] = u * s - v * c;
+                vec[r + m2 + j] = u * c + v * s;
+                vec[r + m2 + k] = u * s - v * c;
             }
             for (size_t j = 0; j < m2; ++j) {
-                float u = (*a)[r + j];
-                float v = (*a)[r + j + m2];
-                (*a)[r + j] = u + v;
-                (*a)[r + j + m2] = u - v;
+                float u = vec[r + j];
+                float v = vec[r + j + m2];
+                vec[r + j] = u + v;
+                vec[r + j + m2] = u - v;
             }
         }
     }
 }
 
-void FDHT2D(std::vector<std::vector<float>>* image)
+void FDHT2D(std::vector<std::vector<float>>* image_ptr)
 {
+    std::vector<std::vector<float>>& image = *image_ptr;
 #ifdef PARALLEL
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < image->size(); ++i) {
-        FDHT1D(&(*image)[i]);
+    for (int i = 0; i < image.size(); ++i) {
+        FDHT1D(&image[i]);
     }
 
-    transpose(image);
+    transpose(&image);
 
 #ifdef PARALLEL
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < image->size(); ++i) {
-        FDHT1D(&(*image)[i]);
+    for (int i = 0; i < image.size(); ++i) {
+        FDHT1D(&image[i]);
     }
 }
 
@@ -174,8 +188,8 @@ void DFHT3D(float*** cube, const int cols)
     const int log2 = (int)log2f(cols);
 
     // Indices for bit reversal operation
-    std::vector<size_t> new_indeces(cols);
-    bitReverse(&new_indeces);
+    std::vector<int> new_indeces(cols);
+    bit_reverse(&new_indeces);
 
     // Main work
     // FHT by X

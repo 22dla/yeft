@@ -4,6 +4,7 @@
 #define _USE_MATH_DEFINES
 // #define MPIDataType MPI_UNSIGNED_CHAR
 // #define MPIDataType MPI_REAL
+#define PARALLEL
 
 #include "time.h"
 #include <algorithm>
@@ -16,14 +17,15 @@
 // using DataType = unsigned __int8;
 // using DataType = float;
 
-void bitReverse(std::vector<size_t>* indices);
-void initializeKernelHost(std::vector<float>* kernel, const int cols);
-std::vector<float> dht1d(const std::vector<float>& a, const std::vector<float>& kernel);
-void transpose(std::vector<std::vector<float>>* image);
+void bit_reverse(std::vector<int>* indices);
+void initialize_kernel_host(std::vector<float>* kernel, const int cols);
+std::vector<float> DHT1D(const std::vector<float>& a, const std::vector<float>& kernel);
+template <typename T>
+void transpose(std::vector<std::vector<T>>* image);
 
 void FDHT1D(std::vector<float>* vector);
 void FDHT2D(std::vector<std::vector<float>>* image);
-void FDHT3D(float*** cube, const size_t cols);
+void FDHT3D(float*** cube, const int cols);
 
 struct Image;
 #endif // !FHT_H

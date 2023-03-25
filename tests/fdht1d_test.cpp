@@ -1,4 +1,4 @@
-#include <fht.h>
+#include <rapidht.h>
 #include <utilities.h>
 
 int main()
@@ -14,7 +14,14 @@ int main()
     common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
     for (int i0 = 0; i0 < image_num; ++i0) {
-        FDHT2D(&a3[i0]);
+        for (int direction = 0; direction < 2; ++direction) {
+#ifdef PARALLEL
+#pragma omp parallel for
+#endif
+            for (int i = 0; i < cols; ++i) {
+                FDHT1D(&a3[i0][i]);
+            }
+        }
     }
 
     common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
