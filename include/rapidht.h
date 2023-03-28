@@ -27,9 +27,7 @@ namespace RapiDHT {
 	class HartleyTransform {
 	public:
 		HartleyTransform(int rows, int cols = 0, int depth = 0, Modes mode = Modes::CPU)
-			: rows_(rows)
-			, cols_(cols)
-			, depth_(depth) {
+			: rows_(rows), cols_(cols), depth_(depth), mode_(mode) {
 			if (rows_ <= 0 || cols_ < 0 || depth_ < 0) {
 				throw std::invalid_argument("Error (initialization): at least Rows must be positive. \
 					Cols and Depth can be zero (by default) but not negative.");
@@ -94,6 +92,7 @@ namespace RapiDHT {
 		std::vector<size_t> bit_reversed_indices_x_;
 		std::vector<size_t> bit_reversed_indices_y_;
 		std::vector<size_t> bit_reversed_indices_z_;
+		Modes mode_ = Modes::CPU;
 
 	};
 }

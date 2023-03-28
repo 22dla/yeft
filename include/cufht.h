@@ -1,16 +1,15 @@
 #define _USE_MATH_DEFINES
 
-#include "time.h"
-#include <algorithm>
-#include <bitset>
-#include <dev_array.h>
-#include <kernel.h>
-#include <iostream>
-#include <math.h>
 #include <vector>
 
 // using DataType = unsigned __int8;
-using DataType = float;
+// using DataType = float;
 
-void initializeKernelHost(std::vector<DataType>& kernel, const int cols);
-void HT2DCuda(const std::vector<DataType>& X, std::vector<DataType>& Y, const int cols, const int image_num);
+void initializeKernelHost(std::vector<float>& kernel, const int cols);
+/**
+* DHT1DCuda(float* vector, const int length) returns the Hartley
+* transform of an 1D array using a matrix x vector multiplication.
+*/
+void DHT1DCuda(float* vector, const int length);
+
+void HT2DCuda(const std::vector<float>& X, std::vector<float>& Y, const int cols, const int image_num);

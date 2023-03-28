@@ -7,12 +7,19 @@
 #include <omp.h>
 #include <rapidht.h>
 #include <utilities.h>
+#include <cufht.h>
 
 using namespace RapiDHT;
 
 void HartleyTransform::ForwardTransform(float* data) {
 	if (cols_ == 0 && depth_ == 0) {
-		FDHT1D(data);
+		if (mode_ == Modes::CPU) {
+			FDHT1D(data);
+		} else if (mode_ == Modes::GPU) {
+			DHT1DCuda(data, rows_);
+		} else {
+			throw std::invalid_argument("Error: so far, only calculations are available on CPU and GPU");
+		}
 	} else if (depth_ == 0) {
 		FDHT2D(data, rows_, cols_);
 	}   //else {
@@ -23,7 +30,6 @@ void HartleyTransform::ForwardTransform(float* data) {
 void HartleyTransform::InverseTransform(float* data) {
 	this->ForwardTransform(data);
 
-	print_data_1d(data, 16);
 	float denominator = 0;
 	if (cols_ == 0 && depth_ == 0) {	// 1D
 		denominator = 1.0f / rows_;

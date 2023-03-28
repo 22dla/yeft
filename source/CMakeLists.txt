@@ -12,7 +12,10 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 file(GLOB SOURCES *.cpp *.cu)
 add_library(coreht ${SOURCES})
 
-target_link_libraries(coreht PRIVATE ${MPI_C_LIBRARIES})
+include_directories(${CUDA_INCLUDE_DIRS})
+link_directories(${CUDA_LIBRARY_DIRS})
+#target_link_libraries(coreht PRIVATE ${CUDA_LIBRARIES})
+target_link_libraries(coreht PRIVATE ${MPI_C_LIBRARIES} ${CUDA_LIBRARIES})
 
 # installing of library
 install(TARGETS coreht
