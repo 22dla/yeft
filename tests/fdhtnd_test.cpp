@@ -14,8 +14,10 @@ int main()
     common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
     auto ptr = a3.data();
+
+    RapiDHT::HartleyTransform ht(cols, rows, image_num);
     for (int i0 = 0; i0 < image_num; ++i0) {
-        FDHT2D(ptr + i0 * rows * cols, rows, cols);
+        ht.FDHT2D(ptr + i0 * rows * cols, rows, cols);
     }
 
     common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);

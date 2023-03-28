@@ -1,30 +1,20 @@
 #include <rapidht.h>
 #include <utilities.h>
 
-int main()
-{
-    // Define global 3D array sizes
-    size_t cols = (size_t)pow(2, 7);
-    size_t rows = cols;
-    size_t image_num = 10;
+int main() {
+	// Define global 3D array sizes
+	size_t rows = (size_t)pow(2, 4);
 
-    auto a3 = make_data_3d_vec_vec_vec<float>(cols, rows, image_num);
+	auto a1 = make_data_1d<float>(rows);
+	print_data_1d(a1);
 
-    double common_start, common_finish;
-    common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
+	auto ptr = a1.data();
 
-    for (int i0 = 0; i0 < image_num; ++i0) {
-        for (int direction = 0; direction < 2; ++direction) {
-#ifdef PARALLEL
-#pragma omp parallel for
-#endif
-            for (int i = 0; i < cols; ++i) {
-                FDHT1D(&a3[i0][i]);
-            }
-        }
-    }
+	RapiDHT::HartleyTransform ht(rows);
+	ht.ForwardTransform(ptr);
+	ht.InverseTransform(ptr);
 
-    common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-    show_time(common_start, common_finish, "Common time");
-    return 0;
+	print_data_1d(a1);
+
+	return 0;
 }
