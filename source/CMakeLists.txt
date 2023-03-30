@@ -14,7 +14,7 @@ add_library(coreht ${SOURCES})
 
 include_directories(${CUDA_INCLUDE_DIRS})
 link_directories(${CUDA_LIBRARY_DIRS})
-#target_link_libraries(coreht PRIVATE ${CUDA_LIBRARIES})
+#set_target_properties(coreht PROPERTIES CUDA_ARCHITECTURES "sm_60")
 target_link_libraries(coreht PRIVATE ${MPI_C_LIBRARIES} ${CUDA_LIBRARIES})
 
 # installing of library

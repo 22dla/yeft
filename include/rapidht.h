@@ -11,7 +11,7 @@
 #include <functional>
 
 // using DataType = unsigned __int8;
-// using DataType = float;
+// using DataType = double;
 
 namespace RapiDHT {
 	enum Directions {
@@ -26,8 +26,8 @@ namespace RapiDHT {
 
 	class HartleyTransform {
 	public:
-		HartleyTransform(int rows, int cols = 0, int depth = 0, Modes mode = Modes::CPU)
-			: rows_(rows), cols_(cols), depth_(depth), mode_(mode) {
+		HartleyTransform(int rows, int cols = 0, int depth = 0)
+			: rows_(rows), cols_(cols), depth_(depth) {
 			if (rows_ <= 0 || cols_ < 0 || depth_ < 0) {
 				throw std::invalid_argument("Error (initialization): at least Rows must be positive. \
 					Cols and Depth can be zero (by default) but not negative.");
@@ -44,47 +44,48 @@ namespace RapiDHT {
 			bit_reverse(&bit_reversed_indices_z_);
 
 		}
-		void ForwardTransform(float* data);
-		void InverseTransform(float* data);
+		void ForwardTransform(double* data);
+		void InverseTransform(double* data);
+		Modes mode = Modes::CPU;
 
 	private:
 		/* ------------------------- ND Transforms ------------------------- */
 		/**
-		 * FDHT1D(std::vector<float>* vector_ptr) returns the Hartley
+		 * FDHT1D(std::vector<double>* vector_ptr) returns the Hartley
 		 * transform of an 1D array using a fast Hartley transform algorithm.
 		 */
-		void FDHT1D(std::vector<float>* vector, const Directions direction = Directions::DIRECTION_X);
+		void FDHT1D(std::vector<double>* vector, const Directions direction = Directions::DIRECTION_X);
 
 		/**
-		 * FDHT1D(float* vector, const int length) returns the Hartley
+		 * FDHT1D(double* vector, const int length) returns the Hartley
 		 * transform of an 1D array using a fast Hartley transform algorithm.
 		 */
-		void FDHT1D(float* vector, const Directions direction = Directions::DIRECTION_X);
+		void FDHT1D(double* vector, const Directions direction = Directions::DIRECTION_X);
 
 		/**
-		 * FHT2D(std::vector<std::vector<float>>* image_ptr) returns the Hartley
+		 * FHT2D(std::vector<std::vector<double>>* image_ptr) returns the Hartley
 		 * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
 		 * is equivalent to computing the 1D transform along each dimension of image.
 		 */
-		void FDHT2D(std::vector<std::vector<float>>* image_ptr);
+		void FDHT2D(std::vector<std::vector<double>>* image_ptr);
 
 		/**
-		 * FHT2D(float* image_ptr, const int rows) returns the Hartley
+		 * FHT2D(double* image_ptr, const int rows) returns the Hartley
 		 * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
 		 * is equivalent to computing the 1D transform along each dimension of image.
 		 */
-		void FDHT2D(float* image, const int rows, const int cols);
+		void FDHT2D(double* image, const int rows, const int cols);
 
 
-		void series1d(std::vector<std::vector<float>>* image, const Directions direction);
-		void series1d(float* image, const Directions direction);
+		void series1d(std::vector<std::vector<double>>* image, const Directions direction);
+		void series1d(double* image, const Directions direction);
 
 		static void bit_reverse(std::vector<size_t>* indices);
-		static void initialize_kernel_host(std::vector<float>* kernel, const int cols);
-		static std::vector<float> DHT1D(const std::vector<float>& a, const std::vector<float>& kernel);
+		static void initialize_kernel_host(std::vector<double>* kernel, const int cols);
+		static std::vector<double> DHT1D(const std::vector<double>& a, const std::vector<double>& kernel);
 		template <typename T>
 		static void transpose(std::vector<std::vector<T>>* image);
-		static void transpose_simple(float* image, int rows, int cols);
+		static void transpose_simple(double* image, int rows, int cols);
 
 		int rows_ = 0;
 		int cols_ = 0;
@@ -92,8 +93,6 @@ namespace RapiDHT {
 		std::vector<size_t> bit_reversed_indices_x_;
 		std::vector<size_t> bit_reversed_indices_y_;
 		std::vector<size_t> bit_reversed_indices_z_;
-		Modes mode_ = Modes::CPU;
-
 	};
 }
 

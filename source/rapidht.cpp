@@ -11,11 +11,11 @@
 
 using namespace RapiDHT;
 
-void HartleyTransform::ForwardTransform(float* data) {
+void HartleyTransform::ForwardTransform(double* data) {
 	if (cols_ == 0 && depth_ == 0) {
-		if (mode_ == Modes::CPU) {
+		if (mode == Modes::CPU) {
 			FDHT1D(data);
-		} else if (mode_ == Modes::GPU) {
+		} else if (mode == Modes::GPU) {
 			DHT1DCuda(data, rows_);
 		} else {
 			throw std::invalid_argument("Error: so far, only calculations are available on CPU and GPU");
@@ -27,10 +27,10 @@ void HartleyTransform::ForwardTransform(float* data) {
 		//} 
 }
 
-void HartleyTransform::InverseTransform(float* data) {
+void HartleyTransform::InverseTransform(double* data) {
 	this->ForwardTransform(data);
 
-	float denominator = 0;
+	double denominator = 0;
 	if (cols_ == 0 && depth_ == 0) {	// 1D
 		denominator = 1.0f / rows_;
 	} else if (depth_ == 0) {			// 2D
@@ -79,8 +79,8 @@ void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
 	}
 }
 
-void HartleyTransform::initialize_kernel_host(std::vector<float>* kernel, const int cols) {
-	const float kPi = std::acos(-1);
+void HartleyTransform::initialize_kernel_host(std::vector<double>* kernel, const int cols) {
+	const double kPi = std::acos(-1);
 	if (kernel->size() != cols * cols) {
 		kernel->resize(cols * cols);
 	}
@@ -88,14 +88,15 @@ void HartleyTransform::initialize_kernel_host(std::vector<float>* kernel, const 
 	// Initialize matrices on the host
 	for (size_t k = 0; k < cols; ++k) {
 		for (size_t j = 0; j < cols; ++j) {
-			(*kernel)[k * cols + j] = cosf(2 * kPi * k * j / cols) + sinf(2 * kPi * k * j / cols);
+			(*kernel)[k * cols + j] = std::cos(2 * kPi * k * j / cols) 
+				+ std::sin(2 * kPi * k * j / cols);
 		}
 	}
 }
 
 // test function
-std::vector<float> HartleyTransform::DHT1D(const std::vector<float>& a, const std::vector<float>& kernel) {
-	std::vector<float> result(a.size());
+std::vector<double> HartleyTransform::DHT1D(const std::vector<double>& a, const std::vector<double>& kernel) {
+	std::vector<double> result(a.size());
 
 	for (size_t i = 0; i < a.size(); i++)
 		for (size_t j = 0; j < a.size(); j++)
@@ -125,7 +126,7 @@ void HartleyTransform::transpose(std::vector<std::vector<T>>* matrix_ptr) {
 	}
 }
 
-void HartleyTransform::transpose_simple(float* matrix, const int rows, const int cols) {
+void HartleyTransform::transpose_simple(double* matrix, const int rows, const int cols) {
 	if (matrix == nullptr) {
 		throw std::invalid_argument("The pointer to matrix is null.");
 	}
@@ -145,7 +146,7 @@ void HartleyTransform::transpose_simple(float* matrix, const int rows, const int
 		}
 	} else {
 		// Non-square matrix
-		std::vector<float> transposed(rows * cols);
+		std::vector<double> transposed(rows * cols);
 	#ifdef PARALLEL
 	#pragma omp parallel for
 	#endif
@@ -157,12 +158,12 @@ void HartleyTransform::transpose_simple(float* matrix, const int rows, const int
 				transposed[j * rows + i] = matrix[i * cols + j];
 			}
 		}
-		std::memcpy(matrix, transposed.data(), sizeof(float) * rows * cols);
+		std::memcpy(matrix, transposed.data(), sizeof(double) * rows * cols);
 	}
 }
 
-void HartleyTransform::series1d(std::vector<std::vector<float>>* image_ptr, const Directions direction) {
-	std::vector<std::vector<float>>& image = *image_ptr;
+void HartleyTransform::series1d(std::vector<std::vector<double>>* image_ptr, const Directions direction) {
+	std::vector<std::vector<double>>& image = *image_ptr;
 #ifdef PARALLEL
 #pragma omp parallel for
 #endif
@@ -171,7 +172,7 @@ void HartleyTransform::series1d(std::vector<std::vector<float>>* image_ptr, cons
 	}
 }
 
-void HartleyTransform::series1d(float* image_ptr, const Directions direction) {
+void HartleyTransform::series1d(double* image_ptr, const Directions direction) {
 	if (image_ptr == nullptr) {
 		throw std::invalid_argument("The pointer to image is null.");
 	}
@@ -184,15 +185,15 @@ void HartleyTransform::series1d(float* image_ptr, const Directions direction) {
 }
 
 /**
- * FDHT1D(std::vector<float>* vector_ptr) returns the Hartley
+ * FDHT1D(std::vector<double>* vector_ptr) returns the Hartley
  * transform of an 1D array using a fast Hartley transform algorithm.
  */
-void HartleyTransform::FDHT1D(std::vector<float>* vector_ptr, const Directions direction) {
+void HartleyTransform::FDHT1D(std::vector<double>* vector_ptr, const Directions direction) {
 	auto& vec = *vector_ptr;
 	// FHT for 1rd axis
 	size_t M = vec.size();
 	const int kLog2n = (int)log2f(M);
-	const float kPi = std::acos(-1);
+	const double kPi = std::acos(-1);
 
 	// Indices for bit reversal operation
 	switch (direction) {
@@ -224,16 +225,16 @@ void HartleyTransform::FDHT1D(std::vector<float>* vector_ptr, const Directions d
 		for (size_t r = 0; r <= M - m; r = r + m) {
 			for (size_t j = 1; j < m4; ++j) {
 				int k = m2 - j;
-				float u = vec[r + m2 + j];
-				float v = vec[r + m2 + k];
-				float c = cosf(static_cast<float>(j) * kPi / m2);
-				float s = sinf(static_cast<float>(j) * kPi / m2);
+				double u = vec[r + m2 + j];
+				double v = vec[r + m2 + k];
+				double c = std::cos(static_cast<double>(j) * kPi / m2);
+				double s = std::sin(static_cast<double>(j) * kPi / m2);
 				vec[r + m2 + j] = u * c + v * s;
 				vec[r + m2 + k] = u * s - v * c;
 			}
 			for (size_t j = 0; j < m2; ++j) {
-				float u = vec[r + j];
-				float v = vec[r + j + m2];
+				double u = vec[r + j];
+				double v = vec[r + j + m2];
 				vec[r + j] = u + v;
 				vec[r + j + m2] = u - v;
 			}
@@ -242,10 +243,10 @@ void HartleyTransform::FDHT1D(std::vector<float>* vector_ptr, const Directions d
 }
 
 /**
- * FDHT1D(float* vec) returns the Hartley transform of an 1D array
+ * FDHT1D(double* vec) returns the Hartley transform of an 1D array
  * during direction "direction" using a fast Hartley transform algorithm.
  */
-void HartleyTransform::FDHT1D(float* vec, const Directions direction) {
+void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
 	if (vec == nullptr) {
 		throw std::invalid_argument("The pointer to vector is null.");
 	}
@@ -283,7 +284,7 @@ void HartleyTransform::FDHT1D(float* vec, const Directions direction) {
 
 	// FHT for 1rd axis
 	const int kLog2n = (int)log2f(length);
-	const float kPi = std::acos(-1);
+	const double kPi = std::acos(-1);
 
 	// Main cicle
 	for (int s = 1; s <= kLog2n; ++s) {
@@ -294,16 +295,16 @@ void HartleyTransform::FDHT1D(float* vec, const Directions direction) {
 		for (size_t r = 0; r <= length - m; r = r + m) {
 			for (size_t j = 1; j < m4; ++j) {
 				int k = m2 - j;
-				float u = vec[r + m2 + j];
-				float v = vec[r + m2 + k];
-				float c = cosf(static_cast<float>(j) * kPi / m2);
-				float s = sinf(static_cast<float>(j) * kPi / m2);
+				double u = vec[r + m2 + j];
+				double v = vec[r + m2 + k];
+				double c = std::cos(static_cast<double>(j) * kPi / m2);
+				double s = std::sin(static_cast<double>(j) * kPi / m2);
 				vec[r + m2 + j] = u * c + v * s;
 				vec[r + m2 + k] = u * s - v * c;
 			}
 			for (size_t j = 0; j < m2; ++j) {
-				float u = vec[r + j];
-				float v = vec[r + j + m2];
+				double u = vec[r + j];
+				double v = vec[r + j + m2];
 				vec[r + j] = u + v;
 				vec[r + j + m2] = u - v;
 			}
@@ -312,11 +313,11 @@ void HartleyTransform::FDHT1D(float* vec, const Directions direction) {
 }
 
 /**
- * FHT2D(std::vector<std::vector<float>>* image_ptr) returns the Hartley
+ * FHT2D(std::vector<std::vector<double>>* image_ptr) returns the Hartley
  * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
  * is equivalent to computing the 1D transform along each dimension of image.
  */
-void HartleyTransform::FDHT2D(std::vector<std::vector<float>>* image_ptr) {
+void HartleyTransform::FDHT2D(std::vector<std::vector<double>>* image_ptr) {
 	auto& image = *image_ptr;
 
 	// 1D transforms along X dimension
@@ -339,11 +340,11 @@ void HartleyTransform::FDHT2D(std::vector<std::vector<float>>* image_ptr) {
 }
 
 /**
- * FHT2D(float* image_ptr, const int rows) returns the Hartley
+ * FHT2D(double* image_ptr, const int rows) returns the Hartley
  * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
  * is equivalent to computing the 1D transform along each dimension of image.
  */
-void HartleyTransform::FDHT2D(float* image_ptr, int rows, int cols) {
+void HartleyTransform::FDHT2D(double* image_ptr, int rows, int cols) {
 	if (image_ptr == nullptr) {
 		throw std::invalid_argument("The pointer to image is null.");
 	}

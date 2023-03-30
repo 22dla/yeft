@@ -6,29 +6,33 @@
 #include <kernel.h>
 #include <iostream>
 #include <math.h>
+#include <utilities.h>
 
-void initializeKernelHost(std::vector<float>& kernel, const int cols) {
-	const float m_pi = std::acos(-1);
+void initializeKernelHost(std::vector<double>& kernel, const int cols) {
+	const double m_pi = std::acos(-1);
 
 	// Initialize matrices on the host
 	for (size_t k = 0; k < cols; ++k) {
 		for (size_t j = 0; j < cols; ++j) {
-			kernel[k * cols + j] = cosf(2 * m_pi * k * j / cols) + sinf(2 * m_pi * k * j / cols);
+			kernel[k * cols + j] = std::cos(2 * m_pi * k * j / cols) + std::sin(2 * m_pi * k * j / cols);
 		}
 	}
 }
 
-void DHT1DCuda(float* h_x, const int length) {
+void DHT1DCuda(double* h_x, const int length) {
 	// Allocate memory on the host
-	std::vector<float> h_A(length * length);
+	std::vector<double> h_A(length * length);
 
 	// Allocate memory on the device
-	dev_array<float> d_A(length * length);	// matrix for one line
-	dev_array<float> d_x(length);			// input vector
-	dev_array<float> d_y(length);			// output vector
+	dev_array<double> d_A(length * length);	// matrix for one line
+	dev_array<double> d_x(length);			// input vector
+	dev_array<double> d_y(length);			// output vector
 
 	// Initialize matrices on the host
 	initializeKernelHost(h_A, length);
+
+	//write_matrix_to_csv(h_A.data(), length, length, "matrix.csv");
+
 	// transfer CPU -> GPU
 	d_A.set(&h_A[0], length * length);
 	// transfer CPU -> GPU
@@ -40,14 +44,14 @@ void DHT1DCuda(float* h_x, const int length) {
 }
 
 // template <typename T>
-void HT2DCuda(const std::vector<float>& X, std::vector<float>& Y, const int cols, const int image_num) {
+void HT2DCuda(const std::vector<double>& X, std::vector<double>& Y, const int cols, const int image_num) {
 	// Allocate memory on the host
-	std::vector<float> h_A(cols * cols);
+	std::vector<double> h_A(cols * cols);
 
 	// Allocate memory on the device
-	dev_array<float> d_A(cols * cols); // matrix for one line
-	dev_array<float> d_X(cols * cols); // one slice
-	dev_array<float> d_Y(cols * cols); // one slice
+	dev_array<double> d_A(cols * cols); // matrix for one line
+	dev_array<double> d_X(cols * cols); // one slice
+	dev_array<double> d_Y(cols * cols); // one slice
 
 	// Initialize matrices on the host
 	initializeKernelHost(h_A, cols);

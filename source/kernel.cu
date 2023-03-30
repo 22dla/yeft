@@ -4,12 +4,12 @@
 
 //using DataType = unsigned __int8;
 
-__global__ void matrixMultiplicationKernel(float* A, float* B, float* C, int N) {
+__global__ void matrixMultiplicationKernel(double* A, double* B, double* C, int N) {
 
 	int ROW = blockIdx.y*blockDim.y + threadIdx.y;
 	int COL = blockIdx.x*blockDim.x + threadIdx.x;
 
-	float tmpSum = 0;
+	double tmpSum = 0;
 
 	if (ROW < N && COL < N) {
 		// each thread computes one element of the block sub-matrix
@@ -22,10 +22,10 @@ __global__ void matrixMultiplicationKernel(float* A, float* B, float* C, int N) 
 	C[ROW * N + COL] = tmpSum;							// for A * B = C (b, c - matrices)
 }
 
-__global__ void matrixVectorMult(float* A, float* x, float* y, int N) {
+__global__ void matrixVectorMult(double* A, double* x, double* y, int N) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	if (i < N) {
-		float sum = 0.0f;
+		double sum = 0.0f;
 		for (int j = 0; j < N; j++) {
 			sum += A[i * N + j] * x[j];
 		}
@@ -33,7 +33,7 @@ __global__ void matrixVectorMult(float* A, float* x, float* y, int N) {
 	}
 }
 
-void matrixMultiplication(float *A, float *B, float *C, int N) {
+void matrixMultiplication(double *A, double *B, double *C, int N) {
 
 	// declare the number of blocks per grid and the number of threads per block
 	// use 1 to 512 threads per block
@@ -49,12 +49,12 @@ void matrixMultiplication(float *A, float *B, float *C, int N) {
 	matrixMultiplicationKernel <<< blocksPerGrid, threadsPerBlock >>> (A, B, C, N);
 }
 
-void vectorMatrixMultiplication(float* A, float* x, float* y, int N) {
+void vectorMatrixMultiplication(double* A, double* x, double* y, int N) {
 
 	int threadsPerBlock, blocksPerGrid;
 
 	threadsPerBlock = (N > 512) ? 512 : N;
-	blocksPerGrid = (N > 512) ? 1 : (N + threadsPerBlock - 1) / threadsPerBlock;
+	blocksPerGrid = (N > 512) ? (N + threadsPerBlock - 1) / threadsPerBlock : 1;
 
 	matrixVectorMult <<<blocksPerGrid, threadsPerBlock >>> (A, x, y, N);
 }
