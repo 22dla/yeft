@@ -12,9 +12,9 @@
     std::cout << "Time taken by " #name ": " << duration_##name.count() << " microseconds" << std::endl;
 
 template<typename T>
-void print_data_1d(const std::vector<T>& data);
-template<typename T>
 void print_data_1d(const T* data, int length);
+template<typename T>
+void print_data_2d(const T* data, int rows, int cols);
 template<typename T>
 void write_matrix_to_csv(const T* matrix, const size_t rows, 
     const size_t cols, const std::string& file_path);
@@ -22,9 +22,7 @@ template <typename T>
 std::vector<std::vector<std::vector<T>>> make_data_3d_vec_vec_vec(
     int cols, int rows, int depth);
 template <typename T>
-std::vector<T> make_data_1d(int rows);
-template <typename T>
-std::vector<T> make_data_3d(int rows, int cols, int depth);
+std::vector<T> make_data(std::initializer_list<int> sizes);
 
 void show_time(double startTime, double finishTime, std::string message);
 

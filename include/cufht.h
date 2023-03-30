@@ -12,4 +12,4 @@ void initializeKernelHost(std::vector<double>& kernel, const int cols);
 */
 void DHT1DCuda(double* vector, const int length);
 
-void HT2DCuda(const std::vector<double>& X, std::vector<double>& Y, const int cols, const int image_num);
+void DHT2DCuda(double* matrix, const int rows, const int cols);

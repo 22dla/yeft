@@ -12,19 +12,25 @@
 using namespace RapiDHT;
 
 void HartleyTransform::ForwardTransform(double* data) {
-	if (cols_ == 0 && depth_ == 0) {
-		if (mode == Modes::CPU) {
+
+	switch (mode) {
+	case RapiDHT::CPU:
+		if (cols_ == 0 && depth_ == 0) {
 			FDHT1D(data);
-		} else if (mode == Modes::GPU) {
-			DHT1DCuda(data, rows_);
-		} else {
-			throw std::invalid_argument("Error: so far, only calculations are available on CPU and GPU");
+		} else if (depth_ == 0) {
+			FDHT2D(data);
 		}
-	} else if (depth_ == 0) {
-		FDHT2D(data, rows_, cols_);
-	}   //else {
-		//FDHT3D(data, rows_, cols_, depth_)
-		//} 
+		break;
+	case RapiDHT::GPU:
+		if (cols_ == 0 && depth_ == 0) {
+			DHT1DCuda(data, rows_);
+		} else if (depth_ == 0) {
+			DHT2DCuda(data, rows_, cols_);
+		}
+		break;
+	default:
+		break;
+	}
 }
 
 void HartleyTransform::InverseTransform(double* data) {
@@ -344,11 +350,11 @@ void HartleyTransform::FDHT2D(std::vector<std::vector<double>>* image_ptr) {
  * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
  * is equivalent to computing the 1D transform along each dimension of image.
  */
-void HartleyTransform::FDHT2D(double* image_ptr, int rows, int cols) {
+void HartleyTransform::FDHT2D(double* image_ptr) {
 	if (image_ptr == nullptr) {
 		throw std::invalid_argument("The pointer to image is null.");
 	}
-	if (rows < 0 || cols < 0) {
+	if (rows_ < 0 || cols_ < 0) {
 		throw std::invalid_argument("Error: rows, and cols must be non-negative");
 	}
 
@@ -360,7 +366,7 @@ void HartleyTransform::FDHT2D(double* image_ptr, int rows, int cols) {
 		});
 
 	PROFILE(Transpose1, {
-		transpose_simple(image_ptr, rows, cols);
+		transpose_simple(image_ptr, rows_, cols_);
 		});
 
 	// 1D transforms along Y dimension
@@ -369,7 +375,7 @@ void HartleyTransform::FDHT2D(double* image_ptr, int rows, int cols) {
 		});
 
 	PROFILE(Transpose2, {
-		transpose_simple(image_ptr, cols, rows);
+		transpose_simple(image_ptr, cols_, rows_);
 		});
 
 	// write_matrix_to_csv(image_ptr, rows, cols, "matrix2.txt");

@@ -4,10 +4,10 @@
 
 int main() {
 	// Define global 3D array sizes
-	size_t rows = (size_t)pow(2, 5);
+	int rows = (int)pow(2, 13);
 
-	auto a1 = make_data_1d<double>(rows);
-	auto a2 = make_data_1d<double>(rows);
+	auto a1 = make_data<double>({ rows });
+	auto a2 = make_data<double>({ rows });
 	//print_data_1d(a1);
 
 	auto ptr = a1.data();
@@ -17,7 +17,7 @@ int main() {
 
 	RapiDHT::HartleyTransform ht(rows);
 	//ht.mode = RapiDHT::GPU;
-	
+
 	ht.ForwardTransform(ptr);
 	ht.InverseTransform(ptr);
 
@@ -29,7 +29,7 @@ int main() {
 	double sum = 0;
 	for (int i = 0; i < rows; ++i) {
 		sum += std::abs(a2[i] - ptr[i]);
-		std::cout << i << " " << a2[i] << " " << ptr[i] << " " << std::abs(a2[i] - ptr[i]) << std::endl;
+		//std::cout << i << " " << a2[i] << " " << ptr[i] << " " << std::abs(a2[i] - ptr[i]) << std::endl;
 	}
 	std::cout << "Error:\t" << sum << std::endl;
 

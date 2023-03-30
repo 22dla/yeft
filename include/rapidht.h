@@ -74,7 +74,7 @@ namespace RapiDHT {
 		 * transform of an 2D array using a fast Hartley transform algorithm. The 2D transform
 		 * is equivalent to computing the 1D transform along each dimension of image.
 		 */
-		void FDHT2D(double* image, const int rows, const int cols);
+		void FDHT2D(double* image);
 
 
 		void series1d(std::vector<std::vector<double>>* image, const Directions direction);
