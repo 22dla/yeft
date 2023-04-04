@@ -86,9 +86,9 @@ std::vector<T> make_data(std::initializer_list<int> sizes) {
 	for (int idx = 0; idx < data.size(); ++idx) {
 		data[idx] = static_cast<T>(dim_sizes[0] + std::cos(std::asin(0.1) / (idx + 1)) -
 			std::sin(std::cos(idx / dim_sizes[0])) +
-			std::tan(idx * dim_sizes[0]) + 2 + idx * idx) / dim_sizes[0];
+			std::tan(idx * dim_sizes[0]) + 2 + idx) / (dim_sizes[0] * dim_sizes[0]);
 	}
-	std::iota(data.begin(), data.end(), 0);
+	//std::iota(data.begin(), data.end(), 0);
 
 	return data;
 }
