@@ -1,9 +1,13 @@
-# adding tests
-add_executable(test_fdht1d fdht1d_test.cpp)
-add_executable(test_fdht2d fdht2d_test.cpp)
-add_executable(test_fdhtnd fdhtnd_test.cpp)
+# List of tests
+set(TESTS
+  test_fdht1d
+  test_fdht2d
+  test_fdhtnd
+)
 
-# linking coreht to tests
-target_link_libraries(test_fdht1d coreht)
-target_link_libraries(test_fdht2d coreht)
-target_link_libraries(test_fdhtnd coreht)
+# Adding tests and linking coreht to them
+foreach(TEST ${TESTS})
+  add_executable(${TEST} "${TEST}.cpp")
+  target_link_libraries(${TEST} coreht)
+  install(TARGETS ${TEST} DESTINATION bin)
+endforeach()
