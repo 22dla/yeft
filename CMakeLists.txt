@@ -8,6 +8,7 @@ project(RapiDHT)
 set(CMAKE_CXX_STANDARD 11)
 
 # Set folder to installing
+message(${CMAKE_INSTALL_PREFIX})
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
 
 # including includes and adding projects
