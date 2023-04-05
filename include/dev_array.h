@@ -63,13 +63,24 @@ public:
 private:
 	// allocate memory on the device
 	void allocate(size_t size) {
-		cudaError_t result = cudaMalloc((void**)&start_, size * sizeof(T));
+		size_t free_bytes, total_bytes;
+		cudaError_t result = cudaMemGetInfo(&free_bytes, &total_bytes);
+		if (result != cudaSuccess) {
+			start_ = end_ = 0;
+			throw std::runtime_error("failed to get GPU memory info");
+		}
+		if (size * sizeof(T) > free_bytes) {
+			start_ = end_ = 0;
+			throw std::runtime_error("not enough free GPU memory");
+		}
+		result = cudaMalloc((void**)&start_, size * sizeof(T));
 		if (result != cudaSuccess) {
 			start_ = end_ = 0;
 			throw std::runtime_error("failed to allocate device memory");
 		}
 		end_ = start_ + size;
 	}
+
 
 	// free memory on the device
 	void free() {
