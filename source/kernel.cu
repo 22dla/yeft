@@ -49,8 +49,12 @@ void matrixMultiplication(double *A, double *B, double *C, const int N) {
 	if (N*N > 512) {
 		threadsPerBlock.x = 512;
 		threadsPerBlock.y = 512;
-		blocksPerGrid.x = ceil(double(N) / double(threadsPerBlock.x));
-		blocksPerGrid.y = ceil(double(N) / double(threadsPerBlock.y));
+		//blocksPerGrid.x = ceil(double(N) / double(threadsPerBlock.x));
+		//blocksPerGrid.y = ceil(double(N) / double(threadsPerBlock.y));
+		
+		//require check
+		blocksPerGrid.x = (N + threadsPerBlock.x - 1) / threadsPerBlock.x;
+		blocksPerGrid.y = (N + threadsPerBlock.y - 1) / threadsPerBlock.y;
 	}
 
 	matrixMultiplicationKernel <<< blocksPerGrid, threadsPerBlock >>> (A, B, C, N);
@@ -74,8 +78,12 @@ void matrixTranspose(double* A, const int N) {
 	if (N * N > 512) {
 		threadsPerBlock.x = 512;
 		threadsPerBlock.y = 512;
-		blocksPerGrid.x = ceil(double(N) / double(threadsPerBlock.x));
-		blocksPerGrid.y = ceil(double(N) / double(threadsPerBlock.y));
+		//blocksPerGrid.x = ceil(double(N) / double(threadsPerBlock.x));
+		//blocksPerGrid.y = ceil(double(N) / double(threadsPerBlock.y));
+
+		//require check
+		blocksPerGrid.x = (N + threadsPerBlock.x - 1) / threadsPerBlock.x;
+		blocksPerGrid.y = (N + threadsPerBlock.y - 1) / threadsPerBlock.y;
 	}
 
 	matrixTransposeKernel <<< blocksPerGrid, threadsPerBlock >> > (A, N);

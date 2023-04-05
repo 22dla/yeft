@@ -1,9 +1,6 @@
 #include <utilities.h>
 #include <fstream>
 #include <iomanip>
-#include <iostream>
-#include <algorithm>
-#include <numeric>
 
 template<typename T>
 void print_data_1d(const T* data, int length) {

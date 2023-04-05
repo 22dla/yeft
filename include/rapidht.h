@@ -5,12 +5,7 @@
 #define PARALLEL
 
 #include <vector>
-#include <stdexcept>
-#include <functional>
 #include <dev_array.h>
-
-// using DataType = unsigned __int8;
-// using DataType = double;
 
 namespace RapiDHT {
 	enum Directions {
@@ -73,6 +68,12 @@ namespace RapiDHT {
 		 * is equivalent to computing the 1D transform along each dimension of image.
 		 */
 		void FDHT2D(double* image);
+
+		/**
+		* DHT1DCuda(double* h_x, double* h_A, const int length) returns the Hartley
+		* transform of an 1D array using a matrix x vector multiplication.
+		*/
+		void DHT1DCuda(double* h_x, double* h_A, const int length);
 
 		/**
 		* DHT2DCuda(double* image) returns the Hartley

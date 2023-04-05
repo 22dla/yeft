@@ -1,16 +1,8 @@
-﻿#include <algorithm>
-#include <bitset>
-#include <fstream>
-#include <immintrin.h>
-#include <iostream>
-#include <math.h>
-#include <omp.h>
+﻿#include <omp.h>
 #include <rapidht.h>
 #include <utilities.h>
-#include <cufht.h>
 #include <complex>
 #include <kernel.h>
-#include <string.h>
 
 using namespace RapiDHT;
 
@@ -64,7 +56,7 @@ void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
 	if (indices.size() == 0) {
 		return;
 	}
-	const int kLog2n = static_cast<int>(log2f(indices.size()));
+	const int kLog2n = static_cast<int>(log2f(static_cast<float>(indices.size())));
 
 	// array to store binary number
 	std::vector<bool> binary_num(indices.size());
@@ -80,9 +72,10 @@ void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
 			base /= 2;
 			++count;
 		}
-		for (int i = count; i < kLog2n; ++i)
+		for (size_t i = count; i < kLog2n; ++i) {
 			binary_num[i] = false;
-
+		}
+			
 		int dec_value = 0;
 		base = 1;
 		for (int i = kLog2n - 1; i >= 0; --i) {
@@ -226,19 +219,19 @@ void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
 	}
 
 	for (int i = 1; i < length; ++i) {
-		int j = bit_reversed_indices[i];
+		size_t j = bit_reversed_indices[i];
 		if (j > i) {
 			std::swap(vec[i], vec[j]);
 		}
 	}
 
 	// FHT for 1rd axis
-	const int kLog2n = (int)log2f(length);
+	const int kLog2n = static_cast<int>(log2f(static_cast<float>(length)));
 	const double kPi = std::acos(-1);
 
 	// Main cicle
 	for (int s = 1; s <= kLog2n; ++s) {
-		int m = powf(2, s);
+		int m = static_cast<int>(powf(2, s));
 		int m2 = m / 2;
 		int m4 = m / 4;
 
@@ -376,6 +369,25 @@ void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
 		vec[i] = x[i].real();
 	}
 }
+
+void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
+	// Allocate memory on the device
+	dev_array<double> d_A(length * length);	// matrix for one line
+	dev_array<double> d_x(length);			// input vector
+	dev_array<double> d_y(length);			// output vector
+
+	//write_matrix_to_csv(h_A.data(), length, length, "matrix.csv");
+
+	// transfer CPU -> GPU
+	d_A.set(&h_A[0], length * length);
+	// transfer CPU -> GPU
+	d_x.set(h_x, length * length);
+	vectorMatrixMultiplication(d_A.getData(), d_x.getData(), d_y.getData(), length);
+	// transfer GPU -> CPU
+	d_y.get(h_x, length);
+	cudaDeviceSynchronize();
+}
+
 
 void HartleyTransform::DHT2DCuda(double* h_X) {
 	// Allocate memory on the device
