@@ -19,3 +19,9 @@ set_target_properties(coreht PROPERTIES CUDA_ARCHITECTURES "60;61")
 # installing of library
 install(TARGETS coreht
         RUNTIME DESTINATION bin)
+
+
+# it helped!
+#export CPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.1/cuda/11.8/include/:$CPATH
+#export LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.1/cuda/11.8/targets/x86_64-linux/lib/:$LD_LIBRARY_PATH
+#export PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/23.1/cuda/11.8/bin/:$PATH

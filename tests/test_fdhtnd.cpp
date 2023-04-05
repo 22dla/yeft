@@ -1,10 +1,11 @@
 #include <iostream>
 #include <rapidht.h>
 #include <utilities.h>
+#include <cmath>
 
 int main(int argc, char** argv) {
 	// Define global 3D array sizes
-	int rows = (int)pow(2, 11);
+	int rows = static_cast<int>(pow(2, 11));
 	int cols = rows;
 	int images_num = 50;
 	RapiDHT::Modes mode = RapiDHT::CPU;

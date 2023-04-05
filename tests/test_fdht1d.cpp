@@ -1,9 +1,10 @@
 #include <rapidht.h>
 #include <utilities.h>
 #include <iostream>
+#include <cmath>
 
 int main(int argc, char** argv) {
-	int rows = (int)pow(2, 2);
+	int rows = static_cast<int>(pow(2, 2));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// If arguments is parced then exactly one argument is required
