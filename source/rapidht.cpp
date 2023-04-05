@@ -10,6 +10,7 @@
 #include <cufht.h>
 #include <complex>
 #include <kernel.h>
+#include <string.h>
 
 using namespace RapiDHT;
 
