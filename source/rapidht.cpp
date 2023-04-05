@@ -169,7 +169,9 @@ void HartleyTransform::transpose_simple(double* matrix, const int rows, const in
 				transposed[j * rows + i] = matrix[i * cols + j];
 			}
 		}
-		std::memcpy(matrix, transposed.data(), sizeof(double) * rows * cols);
+		//std::memcpy(matrix, transposed.data(), sizeof(double) * rows * cols);
+		//require to check
+		std::copy(transposed.data(), transposed.data() + (rows * cols), matrix);
 	}
 }
 
