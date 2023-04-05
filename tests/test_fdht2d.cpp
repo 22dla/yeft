@@ -2,6 +2,7 @@
 #include <rapidht.h>
 #include <utilities.h>
 #include <cmath>
+#include <cstring>
 
 int main(int argc, char** argv) {
 	// Define global 3D array sizes

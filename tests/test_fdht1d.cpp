@@ -2,6 +2,7 @@
 #include <utilities.h>
 #include <iostream>
 #include <cmath>
+#include <cstring>
 
 int main(int argc, char** argv) {
 	int rows = static_cast<int>(pow(2, 2));
