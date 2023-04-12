@@ -36,12 +36,13 @@ int main(int argc, char** argv) {
 		}
 	}
 
-
+	std::cout << "making data..." << std::endl;
 	auto a3 = make_data<double>({ rows, cols, images_num });
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
+	std::cout << "start Hartley trnsfrom calculation..." << std::endl;
 	auto ptr = a3.data();
 
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
