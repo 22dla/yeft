@@ -124,13 +124,9 @@ void HartleyTransform::transpose(std::vector<std::vector<T>>* matrix_ptr) {
 	const size_t rows = matrix.size();
 	const size_t cols = matrix[0].size();
 
-#ifdef PARALLEL
 #pragma omp parallel for
-#endif
 	for (int i = 0; i < rows; ++i) {
-	#ifdef PARALLEL
 	#pragma omp parallel for
-	#endif
 		for (int j = i + 1; j < cols; ++j) {
 			std::swap(matrix[i][j], matrix[j][i]);
 		}
@@ -143,14 +139,10 @@ void HartleyTransform::transpose_simple(double* matrix, const int rows, const in
 	}
 
 	if (rows == cols) {
-	#ifdef PARALLEL
 	#pragma omp parallel for
-	#endif
 		// Square matrix
 		for (int i = 0; i < rows; ++i) {
-		#ifdef PARALLEL
 		#pragma omp parallel for
-		#endif
 			for (int j = i + 1; j < cols; ++j) {
 				std::swap(matrix[i * cols + j], matrix[j * cols + i]);
 			}
@@ -158,13 +150,9 @@ void HartleyTransform::transpose_simple(double* matrix, const int rows, const in
 	} else {
 		// Non-square matrix
 		std::vector<double> transposed(rows * cols);
-	#ifdef PARALLEL
 	#pragma omp parallel for
-	#endif
 		for (int i = 0; i < rows; ++i) {
-		#ifdef PARALLEL
 		#pragma omp parallel for
-		#endif
 			for (int j = 0; j < cols; ++j) {
 				transposed[j * rows + i] = matrix[i * cols + j];
 			}
@@ -183,17 +171,13 @@ void HartleyTransform::series1d(double* image_ptr, const Directions direction) {
 	}
 
 	if (mode_ == Modes::CPU) {
-	#ifdef PARALLEL
 	#pragma omp parallel for
-	#endif
 		for (int i = 0; i < rows_; ++i) {
 			this->FDHT1D(image_ptr + i * cols_, direction);
 		}
 	}
 	if (mode_ == Modes::RFFT) {
-	#ifdef PARALLEL
 	#pragma omp parallel for
-	#endif
 		for (int i = 0; i < rows_; ++i) {
 			RealFFT1D(image_ptr + i * cols_, direction);
 		}

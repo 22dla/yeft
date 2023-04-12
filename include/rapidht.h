@@ -2,7 +2,6 @@
 #define FHT_H
 
 //#define _USE_MATH_DEFINES
-#define PARALLEL
 
 #include <vector>
 #include <dev_array.h>
