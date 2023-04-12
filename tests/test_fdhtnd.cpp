@@ -6,7 +6,7 @@
 
 int main(int argc, char** argv) {
 	// Define global 3D array sizes
-	int rows = static_cast<int>(pow(2, 8));
+	int rows = static_cast<int>(pow(2, 10));
 	int cols = rows;
 	int images_num = 10;
 	RapiDHT::Modes mode = RapiDHT::CPU;
@@ -36,20 +36,17 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	double making_start, making_finish, 
-		calculation_start, calculation_finish, 
-		common_start, common_finish = 0;
-	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
-
+	auto common_start = std::chrono::high_resolution_clock::now();
 
 	std::cout << "making data...";
-	making_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
+	auto making_start = std::chrono::high_resolution_clock::now();
 	auto a3 = make_data<double>({ rows, cols, images_num });
-	making_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-	show_time(making_start, making_finish, "time");
+	auto making_finish = std::chrono::high_resolution_clock::now();
+	auto making_time = std::chrono::duration_cast<std::chrono::milliseconds>(making_finish - making_start);
+	std::cout << "time:\t" << making_time.count() / 1000.0 << std::endl;
 
 	std::cout << "HT calculation...";
-	calculation_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
+	auto calculation_start = std::chrono::high_resolution_clock::now();
 	auto ptr = a3.data();
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
 	for (int i = 0; i < images_num; ++i) {
@@ -57,10 +54,12 @@ int main(int argc, char** argv) {
 		ht.ForwardTransform(ptr + i * cols * rows);
 		//print_data_2d(ptr + i * cols * rows, rows, cols);
 	}
-	calculation_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-	show_time(calculation_start, calculation_finish, "time");
+	auto calculation_finish = std::chrono::high_resolution_clock::now();
+	auto calculation_time = std::chrono::duration_cast<std::chrono::milliseconds>(calculation_finish - calculation_start);
+	std::cout << "time:\t" << calculation_time.count() / 1000.0 << std::endl;
 
-	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-	show_time(common_start, common_finish, "Common time");
+	auto common_finish = std::chrono::high_resolution_clock::now();
+	auto common_time = std::chrono::duration_cast<std::chrono::milliseconds>(common_finish - common_start);
+	std::cout << "time:\t" << common_time.count() / 1000.0 << std::endl;
 	return 0;
 }
