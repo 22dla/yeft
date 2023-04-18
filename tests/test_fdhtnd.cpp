@@ -60,6 +60,6 @@ int main(int argc, char** argv) {
 
 	auto common_finish = std::chrono::high_resolution_clock::now();
 	auto common_time = std::chrono::duration_cast<std::chrono::milliseconds>(common_finish - common_start);
-	std::cout << "time:\t" << common_time.count() / 1000.0 << std::endl;
+	std::cout << "common time:\t" << common_time.count() / 1000.0 << std::endl;
 	return 0;
 }

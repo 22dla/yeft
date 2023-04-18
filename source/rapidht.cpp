@@ -374,7 +374,6 @@ void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
 	cudaDeviceSynchronize();
 }
 
-
 void HartleyTransform::DHT2DCuda(double* h_X) {
 	// Allocate memory on the device
 	dev_array<double> d_X(rows_ * cols_); // one slice
