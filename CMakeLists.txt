@@ -1,8 +1,7 @@
-cmake_minimum_required(VERSION 3.0)
-#cmake_policy(SET CMP0104 NEW)
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 # Name of project
-project(RapiDHT)
+project(RapiDHT LANGUAGES CXX CUDA)
 
 # setting support of C++11
 set(CMAKE_CXX_STANDARD 11)
