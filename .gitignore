@@ -7,3 +7,4 @@
 *.xlsx
 build/
 install/
+.idea/
