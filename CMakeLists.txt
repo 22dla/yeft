@@ -1,7 +1,8 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 # Name of project
-project(RapiDHT LANGUAGES CXX CUDA)
+#project(RapiDHT LANGUAGES CXX CUDA)
+project(RapiDHT LANGUAGES CXX)
 
 # setting support of C++11
 set(CMAKE_CXX_STANDARD 11)
@@ -11,6 +12,7 @@ set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
 
 # including includes and adding projects
 include_directories(include)
+add_subdirectory(3dparty)
 add_subdirectory(source)
 add_subdirectory(tests)
 

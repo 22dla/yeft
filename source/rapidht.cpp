@@ -16,13 +16,14 @@ void HartleyTransform::ForwardTransform(double* data) {
 			FDHT2D(data);
 		}
 		break;
-	case RapiDHT::GPU:
+	/*case RapiDHT::GPU:
 		if (cols_ == 0 && depth_ == 0) {
 			DHT1DCuda(data, h_Vandermonde_Matrix_x_.data(), rows_);
 		} else if (depth_ == 0) {
 			DHT2DCuda(data);
 		}
 		break;
+	*/
 	case RapiDHT::RFFT:
 		if (cols_ == 0 && depth_ == 0) {
 			RealFFT1D(data);
@@ -356,7 +357,7 @@ void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
 	}
 }
 
-void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
+/*void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
 	// Allocate memory on the device
 	dev_array<double> d_A(length * length);	// matrix for one line
 	dev_array<double> d_x(length);			// input vector
@@ -390,3 +391,4 @@ void HartleyTransform::DHT2DCuda(double* h_X) {
 	d_X.get(&h_X[0], rows_ * cols_);
 	cudaDeviceSynchronize();
 }
+*/

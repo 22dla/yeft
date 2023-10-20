@@ -4,7 +4,9 @@
 //#define _USE_MATH_DEFINES
 
 #include <vector>
-#include <dev_array.h>
+#include <stdexcept>
+#include <algorithm>
+//#include <dev_array.h>
 
 namespace RapiDHT {
 	enum Directions {
@@ -38,17 +40,17 @@ namespace RapiDHT {
 				bit_reverse(&bit_reversed_indices_y_);
 				bit_reverse(&bit_reversed_indices_z_);
 			}
-			if (mode_ == Modes::GPU) {
-				// Initialize Vandermonde matrice on the host
-				initialize_kernel_host(&h_Vandermonde_Matrix_x_, rows);
-				//initializeKernelHost(h_A, rows);
-				//initializeKernelHost(h_A, rows);
+			//if (mode_ == Modes::GPU) {
+			//	// Initialize Vandermonde matrice on the host
+			//	initialize_kernel_host(&h_Vandermonde_Matrix_x_, rows);
+			//	//initializeKernelHost(h_A, rows);
+			//	//initializeKernelHost(h_A, rows);
 
 
-				// transfer CPU -> GPU
-				d_Vandermonde_Matrix_x_.resize(rows_ * cols_);
-				d_Vandermonde_Matrix_x_.set(&h_Vandermonde_Matrix_x_[0], rows_ * cols_);
-			}
+			//	// transfer CPU -> GPU
+			//	d_Vandermonde_Matrix_x_.resize(rows_ * cols_);
+			//	d_Vandermonde_Matrix_x_.set(&h_Vandermonde_Matrix_x_[0], rows_ * cols_);
+			//}
 		}
 		void ForwardTransform(double* data);
 		void InverseTransform(double* data);
@@ -72,13 +74,13 @@ namespace RapiDHT {
 		* DHT1DCuda(double* h_x, double* h_A, const int length) returns the Hartley
 		* transform of an 1D array using a matrix x vector multiplication.
 		*/
-		void DHT1DCuda(double* h_x, double* h_A, const int length);
+		//void DHT1DCuda(double* h_x, double* h_A, const int length);
 
 		/**
 		* DHT2DCuda(double* image) returns the Hartley
 		* transform of an 1D array using a matrix x matrix multiplication.
 		*/
-		void DHT2DCuda(double* image);
+		//void DHT2DCuda(double* image);
 
 		/**
 		 * RealFFT1D(double* vector) returns the Fourier transform
@@ -105,7 +107,7 @@ namespace RapiDHT {
 		std::vector<size_t> bit_reversed_indices_y_;
 		std::vector<size_t> bit_reversed_indices_z_;
 		std::vector<double> h_Vandermonde_Matrix_x_;
-		dev_array<double> d_Vandermonde_Matrix_x_;
+		//dev_array<double> d_Vandermonde_Matrix_x_;
 	};
 }
 
