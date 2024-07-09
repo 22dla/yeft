@@ -26,6 +26,7 @@ private:
 	std::chrono::high_resolution_clock::time_point m_startTime;
 };
 
+std::vector<std::vector<std::vector<uint8_t>>> loadImagesTo3DArray(const std::string& folderPath);
 
 template<typename T>
 void print_data_1d(const T* data, int length);

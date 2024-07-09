@@ -1,7 +1,61 @@
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include <utilities.h>
 #include <fstream>
 #include <iomanip>
 #include <cmath>
+#include <filesystem>
+
+// Функция для загрузки изображений и создания 3D массива
+std::vector<std::vector<std::vector<uint8_t>>> loadImagesTo3DArray(const std::string& folderPath) {
+	// Вектор для хранения всех изображений
+	std::vector<cv::Mat> images;
+
+	// Обход всех файлов в указанной папке
+	for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
+		// Проверка, что файл является изображением (опционально)
+		if (entry.is_regular_file() && (entry.path().extension() == ".jpg"
+			|| entry.path().extension() == ".png"
+			|| entry.path().extension() == ".bmp")) {
+			// Загрузка изображения в режиме grayscale
+			cv::Mat img = cv::imread(entry.path().string(), cv::IMREAD_GRAYSCALE);
+
+			// Проверка успешности загрузки
+			if (img.empty()) {
+				std::cerr << "Error loading: " << entry.path().string() << std::endl;
+				continue;
+			}
+
+			// Добавление изображения в вектор
+			images.push_back(img);
+		}
+	}
+
+	// Проверка, что изображения были загружены
+	if (images.empty()) {
+		std::cerr << "No images for loading." << std::endl;
+		return {};
+	}
+
+	// Получение размеров изображения
+	int numImages = images.size();
+	int height = images[0].rows;
+	int width = images[0].cols;
+
+	// Создание 3D массива изображений
+	std::vector<std::vector<std::vector<uint8_t>>> image3D(numImages, std::vector<std::vector<uint8_t>>(height, std::vector<uint8_t>(width)));
+
+	// Заполнение 3D массива данными из изображений
+	for (int i = 0; i < numImages; ++i) {
+		for (int y = 0; y < height; ++y) {
+			for (int x = 0; x < width; ++x) {
+				image3D[i][y][x] = images[i].at<uint8_t>(y, x);
+			}
+		}
+	}
+
+	return image3D;
+}
 
 template<typename T>
 void print_data_1d(const T* data, int length) {
@@ -17,7 +71,7 @@ void print_data_2d(const T* data, int rows_, int cols_) {
 
 	for (size_t i = 0; i < rows_; ++i) {
 		for (size_t j = 0; j < cols_; ++j) {
-			std::cout << std::fixed << std::setprecision(2) << data[i*cols_+j] << " ";
+			std::cout << std::fixed << std::setprecision(2) << data[i * cols_ + j] << " ";
 		}
 		std::cout << "\n";
 	}
