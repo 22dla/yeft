@@ -2,14 +2,16 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 
 # Name of project
 project(RapiDHT LANGUAGES CXX CUDA)
+find_package(OpenCV REQUIRED)
 
-# setting support of C++11
-set(CMAKE_CXX_STANDARD 11)
+# setting support of C++17
+set(CMAKE_CXX_STANDARD 17)
 
 # Set folder to installing
 set(CMAKE_INSTALL_PREFIX ${CMAKE_CURRENT_SOURCE_DIR}/install)
 
 # including includes and adding projects
+include_directories(${OpenCV_INLCUDE_DIRS})
 include_directories(include)
 add_subdirectory(source)
 add_subdirectory(tests)

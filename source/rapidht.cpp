@@ -12,21 +12,24 @@ void HartleyTransform::ForwardTransform(double* data) {
 	case RapiDHT::CPU:
 		if (cols_ == 0 && depth_ == 0) {
 			FDHT1D(data);
-		} else if (depth_ == 0) {
+		}
+		else if (depth_ == 0) {
 			FDHT2D(data);
 		}
 		break;
 	case RapiDHT::GPU:
 		if (cols_ == 0 && depth_ == 0) {
 			DHT1DCuda(data, h_Vandermonde_Matrix_x_.data(), rows_);
-		} else if (depth_ == 0) {
+		}
+		else if (depth_ == 0) {
 			DHT2DCuda(data);
 		}
 		break;
 	case RapiDHT::RFFT:
 		if (cols_ == 0 && depth_ == 0) {
 			RealFFT1D(data);
-		} else if (depth_ == 0) {
+		}
+		else if (depth_ == 0) {
 			FDHT2D(data);
 		}
 		break;
@@ -41,9 +44,11 @@ void HartleyTransform::InverseTransform(double* data) {
 	double denominator = 0;
 	if (cols_ == 0 && depth_ == 0) {	// 1D
 		denominator = 1.0f / rows_;
-	} else if (depth_ == 0) {			// 2D
+	}
+	else if (depth_ == 0) {			// 2D
 		denominator = 1.0f / (rows_ * cols_);
-	} else {							// 3D
+	}
+	else {							// 3D
 		denominator = 1.0f / (rows_ * cols_ * depth_);
 	}
 	for (int i = 0; i < rows_; ++i) {
@@ -75,7 +80,7 @@ void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
 		for (size_t i = count; i < kLog2n; ++i) {
 			binary_num[i] = false;
 		}
-			
+
 		int dec_value = 0;
 		base = 1;
 		for (int i = kLog2n - 1; i >= 0; --i) {
@@ -147,7 +152,8 @@ void HartleyTransform::transpose_simple(double* matrix, const int rows, const in
 				std::swap(matrix[i * cols + j], matrix[j * cols + i]);
 			}
 		}
-	} else {
+	}
+	else {
 		// Non-square matrix
 		std::vector<double> transposed(rows * cols);
 	#pragma omp parallel for
