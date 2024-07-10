@@ -86,7 +86,7 @@ namespace RapiDHT {
 		 */
 		void RealFFT1D(double* vector, const Directions direction = Directions::DIRECTION_X);
 
-		void series1d(double* image, const Directions direction);
+		void series1D(double* image, const Directions direction);
 		
 		static void bitReverse(std::vector<size_t>* indices);
 		static void initializeKernelHost(std::vector<double>* kernel, const int cols);
