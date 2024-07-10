@@ -29,14 +29,15 @@ private:
 std::vector<std::vector<std::vector<uint8_t>>> loadImagesTo3DArray(const std::string& folderPath);
 
 template<typename T>
-void print_data_1d(const T* data, int length);
+void printData1D(const T* data, int length);
+
 template<typename T>
-void print_data_2d(const T* data, int rows, int cols);
+void printData2D(const T* data, int rows, int cols);
 template<typename T>
-void write_matrix_to_csv(const T* matrix, const size_t rows,
+void writeMatrixToCSV(const T* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
 template <typename T>
-std::vector<std::vector<std::vector<T>>> make_data_3d_vec_vec_vec(
+std::vector<std::vector<std::vector<T>>> makeData3DArray(
 	int cols, int rows, int depth);
 template <typename T>
 std::vector<T> makeData(std::initializer_list<int> sizes);

@@ -46,7 +46,7 @@ std::vector<std::vector<std::vector<uint8_t>>> loadImagesTo3DArray(const std::st
 }
 
 template<typename T>
-void print_data_1d(const T* data, int length) {
+void printData1D(const T* data, int length) {
 
 	for (size_t idx = 0; idx < length; ++idx) {
 		std::cout << std::fixed << std::setprecision(2) << data[idx] << "\t";
@@ -55,7 +55,7 @@ void print_data_1d(const T* data, int length) {
 }
 
 template<typename T>
-void print_data_2d(const T* data, int rows_, int cols_) {
+void printData2D(const T* data, int rows_, int cols_) {
 
 	for (size_t i = 0; i < rows_; ++i) {
 		for (size_t j = 0; j < cols_; ++j) {
@@ -67,7 +67,7 @@ void print_data_2d(const T* data, int rows_, int cols_) {
 }
 
 template<typename T>
-void write_matrix_to_csv(const T* matrix, const size_t rows,
+void writeMatrixToCSV(const T* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path) {
 	std::ofstream output_file(file_path);
 	if (!output_file) {
@@ -137,14 +137,13 @@ void show_time(double startTime, double finishTime, std::string message) {
 	std::cout << message + ":\t" << finishTime - startTime << " sec" << std::endl;
 }
 
-// explicit template instantiation for int and double
-template void print_data_1d(const int* data, int length);
-template void print_data_1d(const double* data, int length);
-template void print_data_2d(const int* data, int rows, int cols);
-template void print_data_2d(const double* data, int rows, int cols);
-template void write_matrix_to_csv(const double* matrix, const size_t rows,
+template void printData1D(const int* data, int length);
+template void printData1D(const double* data, int length);
+template void printData2D(const int* data, int rows, int cols);
+template void printData2D(const double* data, int rows, int cols);
+template void writeMatrixToCSV(const double* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
-template void write_matrix_to_csv(const int* matrix, const size_t rows,
+template void writeMatrixToCSV(const int* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
 template std::vector<int> makeData(std::initializer_list<int> sizes);
 template std::vector<double> makeData(std::initializer_list<int> size);

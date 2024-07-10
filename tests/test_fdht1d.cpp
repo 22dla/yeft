@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 
 	auto a1 = makeData<double>({ rows });
 	auto a2 = makeData<double>({ rows });
-	//print_data_1d(a1);
+	//printData1D(a1);
 
 	auto ptr = a1.data();
 
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	ht.ForwardTransform(ptr);
 	ht.InverseTransform(ptr);
 
-	//print_data_1d(a1);
+	//printData1D(a1);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	show_time(common_start, common_finish, "Common time");
