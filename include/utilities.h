@@ -39,7 +39,7 @@ template <typename T>
 std::vector<std::vector<std::vector<T>>> make_data_3d_vec_vec_vec(
 	int cols, int rows, int depth);
 template <typename T>
-std::vector<T> make_data(std::initializer_list<int> sizes);
+std::vector<T> makeData(std::initializer_list<int> sizes);
 
 void show_time(double startTime, double finishTime, std::string message);
 

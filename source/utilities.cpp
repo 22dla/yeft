@@ -6,46 +6,34 @@
 #include <cmath>
 #include <filesystem>
 
-// Функция для загрузки изображений и создания 3D массива
+// Функция для загрузки изображений и создания 3D данных
 std::vector<std::vector<std::vector<uint8_t>>> loadImagesTo3DArray(const std::string& folderPath) {
-	// Вектор для хранения всех изображений
 	std::vector<cv::Mat> images;
-
-	// Обход всех файлов в указанной папке
 	for (const auto& entry : std::filesystem::directory_iterator(folderPath)) {
-		// Проверка, что файл является изображением (опционально)
 		if (entry.is_regular_file() && (entry.path().extension() == ".jpg"
 			|| entry.path().extension() == ".png"
 			|| entry.path().extension() == ".bmp")) {
-			// Загрузка изображения в режиме grayscale
 			cv::Mat img = cv::imread(entry.path().string(), cv::IMREAD_GRAYSCALE);
 
-			// Проверка успешности загрузки
 			if (img.empty()) {
 				std::cerr << "Error loading: " << entry.path().string() << std::endl;
 				continue;
 			}
 
-			// Добавление изображения в вектор
 			images.push_back(img);
 		}
 	}
 
-	// Проверка, что изображения были загружены
 	if (images.empty()) {
 		std::cerr << "No images for loading." << std::endl;
 		return {};
 	}
 
-	// Получение размеров изображения
 	int numImages = images.size();
 	int height = images[0].rows;
 	int width = images[0].cols;
 
-	// Создание 3D массива изображений
 	std::vector<std::vector<std::vector<uint8_t>>> image3D(numImages, std::vector<std::vector<uint8_t>>(height, std::vector<uint8_t>(width)));
-
-	// Заполнение 3D массива данными из изображений
 	for (int i = 0; i < numImages; ++i) {
 		for (int y = 0; y < height; ++y) {
 			for (int x = 0; x < width; ++x) {
@@ -103,7 +91,7 @@ void write_matrix_to_csv(const T* matrix, const size_t rows,
 }
 
 template <typename T>
-std::vector<std::vector<std::vector<T>>> make_data_3d_vec_vec_vec(
+std::vector<std::vector<std::vector<T>>> makeData3DArray(
 	int n, int m, int l) {
 	const double kPi = std::acos(-1);
 	std::vector<std::vector<std::vector<T>>> data(l);
@@ -122,7 +110,7 @@ std::vector<std::vector<std::vector<T>>> make_data_3d_vec_vec_vec(
 }
 
 template <typename T>
-std::vector<T> make_data(std::initializer_list<int> sizes) {
+std::vector<T> makeData(std::initializer_list<int> sizes) {
 	int num_dims = sizes.size();
 	std::vector<int> dim_sizes(sizes);
 	for (int i = 0; i < num_dims; i++) {
@@ -158,7 +146,7 @@ template void write_matrix_to_csv(const double* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
 template void write_matrix_to_csv(const int* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
-template std::vector<int> make_data(std::initializer_list<int> sizes);
-template std::vector<double> make_data(std::initializer_list<int> size);
-template std::vector<std::vector<std::vector<int>>> make_data_3d_vec_vec_vec(int n, int m, int l);
-template std::vector<std::vector<std::vector<double>>> make_data_3d_vec_vec_vec(int n, int m, int l);
+template std::vector<int> makeData(std::initializer_list<int> sizes);
+template std::vector<double> makeData(std::initializer_list<int> size);
+template std::vector<std::vector<std::vector<int>>> makeData3DArray(int n, int m, int l);
+template std::vector<std::vector<std::vector<double>>> makeData3DArray(int n, int m, int l);

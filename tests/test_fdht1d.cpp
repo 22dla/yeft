@@ -32,8 +32,8 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a1 = make_data<double>({ rows });
-	auto a2 = make_data<double>({ rows });
+	auto a1 = makeData<double>({ rows });
+	auto a2 = makeData<double>({ rows });
 	//print_data_1d(a1);
 
 	auto ptr = a1.data();

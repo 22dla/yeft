@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a3 = make_data<double>({ rows, cols });
+	auto a3 = makeData<double>({ rows, cols });
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
