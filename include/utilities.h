@@ -33,12 +33,15 @@ void printData1D(const T* data, int length);
 
 template<typename T>
 void printData2D(const T* data, int rows, int cols);
+
 template<typename T>
 void writeMatrixToCSV(const T* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
+
 template <typename T>
 std::vector<std::vector<std::vector<T>>> makeData3DArray(
 	int cols, int rows, int depth);
+
 template <typename T>
 std::vector<T> makeData(std::initializer_list<int> sizes);
 

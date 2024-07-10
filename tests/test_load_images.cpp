@@ -3,7 +3,6 @@
 #include <filesystem>
 #include <utilities.h>
 
-// Пространство имен для удобного использования файловой системы
 namespace fs = std::filesystem;
 
 int main() {

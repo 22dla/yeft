@@ -34,13 +34,13 @@ namespace RapiDHT {
 				bit_reversed_indices_x_.resize(rows_);
 				bit_reversed_indices_y_.resize(cols_);
 				bit_reversed_indices_z_.resize(depth_);
-				bit_reverse(&bit_reversed_indices_x_);
-				bit_reverse(&bit_reversed_indices_y_);
-				bit_reverse(&bit_reversed_indices_z_);
+				bitReverse(&bit_reversed_indices_x_);
+				bitReverse(&bit_reversed_indices_y_);
+				bitReverse(&bit_reversed_indices_z_);
 			}
 			if (mode_ == Modes::GPU) {
 				// Initialize Vandermonde matrice on the host
-				initialize_kernel_host(&h_Vandermonde_Matrix_x_, rows);
+				initializeKernelHost(&h_Vandermonde_Matrix_x_, rows);
 				//initializeKernelHost(h_A, rows);
 				//initializeKernelHost(h_A, rows);
 
@@ -88,14 +88,14 @@ namespace RapiDHT {
 
 		void series1d(double* image, const Directions direction);
 		
-		static void bit_reverse(std::vector<size_t>* indices);
-		static void initialize_kernel_host(std::vector<double>* kernel, const int cols);
+		static void bitReverse(std::vector<size_t>* indices);
+		static void initializeKernelHost(std::vector<double>* kernel, const int cols);
 		static std::vector<double> DHT1D(const std::vector<double>& a, const std::vector<double>& kernel);
 		template <typename T>
 		static void transpose(std::vector<std::vector<T>>* image);
-		static void transpose_simple(double* image, int rows, int cols);
+		static void transposeSimple(double* image, int rows, int cols);
 
-		size_t* choose_reverced_indices(int* length, const Directions direction);
+		size_t* chooseRevercedIndices(int* length, const Directions direction);
 
 		int rows_ = 0;
 		int cols_ = 0;

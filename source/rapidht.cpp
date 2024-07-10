@@ -56,7 +56,7 @@ void HartleyTransform::InverseTransform(double* data) {
 	}
 }
 
-void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
+void HartleyTransform::bitReverse(std::vector<size_t>* indices_ptr) {
 	std::vector<size_t>& indices = *indices_ptr;
 	if (indices.size() == 0) {
 		return;
@@ -93,9 +93,9 @@ void HartleyTransform::bit_reverse(std::vector<size_t>* indices_ptr) {
 	}
 }
 
-void HartleyTransform::initialize_kernel_host(std::vector<double>* kernel, const int cols) {
+void HartleyTransform::initializeKernelHost(std::vector<double>* kernel, const int cols) {
 	if (kernel == nullptr) {
-		throw std::invalid_argument("Error: kernell==nullptr (initialize_kernel_host)");
+		throw std::invalid_argument("Error: kernell==nullptr (initializeKernelHost)");
 	}
 	auto& ker = *kernel;
 	ker.resize(cols * cols);
@@ -138,7 +138,7 @@ void HartleyTransform::transpose(std::vector<std::vector<T>>* matrix_ptr) {
 	}
 }
 
-void HartleyTransform::transpose_simple(double* matrix, const int rows, const int cols) {
+void HartleyTransform::transposeSimple(double* matrix, const int rows, const int cols) {
 	if (matrix == nullptr) {
 		throw std::invalid_argument("The pointer to matrix is null.");
 	}
@@ -198,7 +198,7 @@ void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
 	// Indices for bit reversal operation
 	// and length of vector depending of direction
 	int length = 0;
-	auto bit_reversed_indices = this->choose_reverced_indices(&length, direction);
+	auto bit_reversed_indices = this->chooseRevercedIndices(&length, direction);
 
 	if (length < 0) {
 		std::cout << "Error: length must be non-negative." << std::endl;
@@ -262,17 +262,17 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 	// 1D transforms along X dimension
 	this->series1d(image_ptr, DIRECTION_X);
 
-	transpose_simple(image_ptr, rows_, cols_);
+	transposeSimple(image_ptr, rows_, cols_);
 
 	// 1D transforms along Y dimension
 	this->series1d(image_ptr, DIRECTION_Y);
 
-	transpose_simple(image_ptr, cols_, rows_);
+	transposeSimple(image_ptr, cols_, rows_);
 
 	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }
 
-size_t* HartleyTransform::choose_reverced_indices(int* length, const Directions direction) {
+size_t* HartleyTransform::chooseRevercedIndices(int* length, const Directions direction) {
 
 	size_t* bit_reversed_indices;
 	switch (direction) {
@@ -304,7 +304,7 @@ void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
 	// Indices for bit reversal operation
 	// and length of vector depending of direction
 	int length = 0;
-	auto bit_reversed_indices = this->choose_reverced_indices(&length, direction);
+	auto bit_reversed_indices = this->chooseRevercedIndices(&length, direction);
 
 	if (length < 0) {
 		std::cout << "Error: length must be non-negative." << std::endl;
