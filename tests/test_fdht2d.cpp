@@ -41,14 +41,14 @@ int main(int argc, char** argv) {
 
 	auto ptr = a3.data();
 
-	print_data_2d(ptr, rows, cols);
+	printData2D(ptr, rows, cols);
 
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
 	ht.ForwardTransform(ptr);
 
-	print_data_2d(ptr, rows, cols);
+	printData2D(ptr, rows, cols);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-	show_time(common_start, common_finish, "Common time");
+	showTime(common_start, common_finish, "Common time");
 	return 0;
 }

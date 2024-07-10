@@ -49,7 +49,7 @@ int main(int argc, char** argv) {
 	//printData1D(a1);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
-	show_time(common_start, common_finish, "Common time");
+	showTime(common_start, common_finish, "Common time");
 
 	double sum = 0;
 	for (int i = 0; i < rows; ++i) {

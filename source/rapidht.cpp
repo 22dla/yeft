@@ -257,7 +257,7 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 		throw std::invalid_argument("Error: rows, and cols must be non-negative.");
 	}
 
-	// write_matrix_to_csv(image_ptr, rows, cols, "matrix1.txt");
+	// writeMatrixToCSV(image_ptr, rows, cols, "matrix1.txt");
 
 	// 1D transforms along X dimension
 	this->series1d(image_ptr, DIRECTION_X);
@@ -269,7 +269,7 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 
 	transpose_simple(image_ptr, cols_, rows_);
 
-	// write_matrix_to_csv(image_ptr, rows, cols, "matrix2.txt");
+	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }
 
 size_t* HartleyTransform::choose_reverced_indices(int* length, const Directions direction) {
@@ -368,7 +368,7 @@ void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
 	dev_array<double> d_x(length);			// input vector
 	dev_array<double> d_y(length);			// output vector
 
-	//write_matrix_to_csv(h_A.data(), length, length, "matrix.csv");
+	//writeMatrixToCSV(h_A.data(), length, length, "matrix.csv");
 
 	// transfer CPU -> GPU
 	d_A.set(&h_A[0], length * length);

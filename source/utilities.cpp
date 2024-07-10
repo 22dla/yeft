@@ -133,7 +133,7 @@ std::vector<T> makeData(std::initializer_list<int> sizes) {
 	return data;
 }
 
-void show_time(double startTime, double finishTime, std::string message) {
+void showTime(double startTime, double finishTime, std::string message) {
 	std::cout << message + ":\t" << finishTime - startTime << " sec" << std::endl;
 }
 

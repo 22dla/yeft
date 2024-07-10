@@ -50,9 +50,9 @@ int main(int argc, char** argv) {
 	auto ptr = a3.data();
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
 	for (int i = 0; i < images_num; ++i) {
-		//print_data_2d(ptr + i * cols * rows, rows, cols);
+		//printData2D(ptr + i * cols * rows, rows, cols);
 		ht.ForwardTransform(ptr + i * cols * rows);
-		//print_data_2d(ptr + i * cols * rows, rows, cols);
+		//printData2D(ptr + i * cols * rows, rows, cols);
 	}
 	auto calculation_finish = std::chrono::high_resolution_clock::now();
 	auto calculation_time = std::chrono::duration_cast<std::chrono::milliseconds>(calculation_finish - calculation_start);

@@ -42,6 +42,6 @@ std::vector<std::vector<std::vector<T>>> makeData3DArray(
 template <typename T>
 std::vector<T> makeData(std::initializer_list<int> sizes);
 
-void show_time(double startTime, double finishTime, std::string message);
+void showTime(double startTime, double finishTime, std::string message);
 
 #endif // !UTILITIES_H
