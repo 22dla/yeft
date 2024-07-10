@@ -14,40 +14,41 @@ namespace RapiDHT {
 	};
 	enum Modes {
 		CPU,
-		GPU, 
+		GPU,
 		RFFT
 	};
 
 	class HartleyTransform {
 	public:
 		HartleyTransform(int rows, int cols = 0, int depth = 0, Modes mode = Modes::CPU)
-			: rows_(rows), cols_(cols), depth_(depth), mode_(mode) {
-			if (rows_ <= 0 || cols_ < 0 || depth_ < 0) {
+			: _rows(rows), _cols(cols), _depth(depth), _mode(mode) {
+			if (_rows <= 0 || _cols < 0 || _depth < 0) {
 				throw std::invalid_argument("Error (initialization): at least Rows must be positive. \
 					Cols and Depth can be zero (by default) but not negative.");
-			} else if (cols_ == 0 && depth_ > 0) {
+			}
+			else if (_cols == 0 && _depth > 0) {
 				throw std::invalid_argument("Error (initialization): if cols is zero, depth must be zero.");
 			}
 
 			// Preparation to 1D transforms
-			if (mode_ == Modes::CPU || mode_ == Modes::RFFT) {
-				bit_reversed_indices_x_.resize(rows_);
-				bit_reversed_indices_y_.resize(cols_);
-				bit_reversed_indices_z_.resize(depth_);
-				bitReverse(&bit_reversed_indices_x_);
-				bitReverse(&bit_reversed_indices_y_);
-				bitReverse(&bit_reversed_indices_z_);
+			if (_mode == Modes::CPU || _mode == Modes::RFFT) {
+				_bit_reversed_indices_x.resize(_rows);
+				_bit_reversed_indices_y.resize(_cols);
+				_bit_reversed_indices_z.resize(_depth);
+				bitReverse(&_bit_reversed_indices_x);
+				bitReverse(&_bit_reversed_indices_y);
+				bitReverse(&_bit_reversed_indices_z);
 			}
-			if (mode_ == Modes::GPU) {
+			if (_mode == Modes::GPU) {
 				// Initialize Vandermonde matrice on the host
-				initializeKernelHost(&h_Vandermonde_Matrix_x_, rows);
+				initializeKernelHost(&_h_Vandermonde_Matrix_x, rows);
 				//initializeKernelHost(h_A, rows);
 				//initializeKernelHost(h_A, rows);
 
 
 				// transfer CPU -> GPU
-				d_Vandermonde_Matrix_x_.resize(rows_ * cols_);
-				d_Vandermonde_Matrix_x_.set(&h_Vandermonde_Matrix_x_[0], rows_ * cols_);
+				_d_Vandermonde_Matrix_x.resize(_rows * _cols);
+				_d_Vandermonde_Matrix_x.set(&_h_Vandermonde_Matrix_x[0], _rows * _cols);
 			}
 		}
 		void ForwardTransform(double* data);
@@ -87,7 +88,7 @@ namespace RapiDHT {
 		void RealFFT1D(double* vector, const Directions direction = Directions::DIRECTION_X);
 
 		void series1D(double* image, const Directions direction);
-		
+
 		static void bitReverse(std::vector<size_t>* indices);
 		static void initializeKernelHost(std::vector<double>* kernel, const int cols);
 		static std::vector<double> DHT1D(const std::vector<double>& a, const std::vector<double>& kernel);
@@ -97,15 +98,15 @@ namespace RapiDHT {
 
 		size_t* chooseRevercedIndices(int* length, const Directions direction);
 
-		int rows_ = 0;
-		int cols_ = 0;
-		int depth_ = 0;
-		Modes mode_ = Modes::CPU;
-		std::vector<size_t> bit_reversed_indices_x_;
-		std::vector<size_t> bit_reversed_indices_y_;
-		std::vector<size_t> bit_reversed_indices_z_;
-		std::vector<double> h_Vandermonde_Matrix_x_;
-		dev_array<double> d_Vandermonde_Matrix_x_;
+		int _rows = 0;
+		int _cols = 0;
+		int _depth = 0;
+		Modes _mode = Modes::CPU;
+		std::vector<size_t> _bit_reversed_indices_x;
+		std::vector<size_t> _bit_reversed_indices_y;
+		std::vector<size_t> _bit_reversed_indices_z;
+		std::vector<double> _h_Vandermonde_Matrix_x;
+		dev_array<double> _d_Vandermonde_Matrix_x;
 	};
 }
 

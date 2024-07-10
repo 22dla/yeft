@@ -55,9 +55,9 @@ void printData1D(const T* data, int length) {
 }
 
 template<typename T>
-void printData2D(const T* data, int rows_, int cols_) {
+void printData2D(const T* data, int _rows, int cols_) {
 
-	for (size_t i = 0; i < rows_; ++i) {
+	for (size_t i = 0; i < _rows; ++i) {
 		for (size_t j = 0; j < cols_; ++j) {
 			std::cout << std::fixed << std::setprecision(2) << data[i * cols_ + j] << " ";
 		}
