@@ -8,28 +8,28 @@ using namespace RapiDHT;
 
 void HartleyTransform::ForwardTransform(double* data) {
 
-	switch (mode_) {
+	switch (_mode) {
 	case RapiDHT::CPU:
-		if (cols_ == 0 && depth_ == 0) {
+		if (_cols == 0 && _depth == 0) {
 			FDHT1D(data);
 		}
-		else if (depth_ == 0) {
+		else if (_depth == 0) {
 			FDHT2D(data);
 		}
 		break;
 	case RapiDHT::GPU:
-		if (cols_ == 0 && depth_ == 0) {
+		if (_cols == 0 && _depth == 0) {
 			DHT1DCuda(data, _h_Vandermonde_Matrix_x.data(), _rows);
 		}
-		else if (depth_ == 0) {
+		else if (_depth == 0) {
 			DHT2DCuda(data);
 		}
 		break;
 	case RapiDHT::RFFT:
-		if (cols_ == 0 && depth_ == 0) {
+		if (_cols == 0 && _depth == 0) {
 			RealFFT1D(data);
 		}
-		else if (depth_ == 0) {
+		else if (_depth == 0) {
 			FDHT2D(data);
 		}
 		break;
@@ -42,14 +42,14 @@ void HartleyTransform::InverseTransform(double* data) {
 	this->ForwardTransform(data);
 
 	double denominator = 0;
-	if (cols_ == 0 && depth_ == 0) {	// 1D
+	if (_cols == 0 && _depth == 0) {	// 1D
 		denominator = 1.0f / _rows;
 	}
-	else if (depth_ == 0) {			// 2D
-		denominator = 1.0f / (_rows * cols_);
+	else if (_depth == 0) {			// 2D
+		denominator = 1.0f / (_rows * _cols);
 	}
 	else {							// 3D
-		denominator = 1.0f / (_rows * cols_ * depth_);
+		denominator = 1.0f / (_rows * _cols * _depth);
 	}
 	for (int i = 0; i < _rows; ++i) {
 		data[i] *= denominator;
@@ -176,16 +176,16 @@ void HartleyTransform::series1D(double* image_ptr, const Directions direction) {
 		throw std::invalid_argument("The pointer to image is null.");
 	}
 
-	if (mode_ == Modes::CPU) {
+	if (_mode == Modes::CPU) {
 	#pragma omp parallel for
 		for (int i = 0; i < _rows; ++i) {
-			this->FDHT1D(image_ptr + i * cols_, direction);
+			this->FDHT1D(image_ptr + i * _cols, direction);
 		}
 	}
-	if (mode_ == Modes::RFFT) {
+	if (_mode == Modes::RFFT) {
 	#pragma omp parallel for
 		for (int i = 0; i < _rows; ++i) {
-			RealFFT1D(image_ptr + i * cols_, direction);
+			RealFFT1D(image_ptr + i * _cols, direction);
 		}
 	}
 }
@@ -252,7 +252,7 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 		std::cout << "The pointer to image is null." << std::endl;
 		throw std::invalid_argument("The pointer to image is null.");
 	}
-	if (_rows < 0 || cols_ < 0) {
+	if (_rows < 0 || _cols < 0) {
 		std::cout << "Error: rows, and cols must be non-negative." << std::endl;
 		throw std::invalid_argument("Error: rows, and cols must be non-negative.");
 	}
@@ -262,12 +262,12 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 	// 1D transforms along X dimension
 	this->series1D(image_ptr, DIRECTION_X);
 
-	transposeSimple(image_ptr, _rows, cols_);
+	transposeSimple(image_ptr, _rows, _cols);
 
 	// 1D transforms along Y dimension
 	this->series1D(image_ptr, DIRECTION_Y);
 
-	transposeSimple(image_ptr, cols_, _rows);
+	transposeSimple(image_ptr, _cols, _rows);
 
 	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }
@@ -281,11 +281,11 @@ size_t* HartleyTransform::chooseRevercedIndices(int* length, const Directions di
 		bit_reversed_indices = _bit_reversed_indices_x.data();
 		break;
 	case DIRECTION_Y:
-		*length = cols_;
+		*length = _cols;
 		bit_reversed_indices = _bit_reversed_indices_y.data();
 		break;
 	case DIRECTION_Z:
-		*length = depth_;
+		*length = _depth;
 		bit_reversed_indices = _bit_reversed_indices_z.data();
 		break;
 	default:
@@ -382,17 +382,17 @@ void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
 
 void HartleyTransform::DHT2DCuda(double* h_X) {
 	// Allocate memory on the device
-	dev_array<double> d_X(_rows * cols_); // one slice
-	dev_array<double> d_Y(_rows * cols_); // one slice
+	dev_array<double> d_X(_rows * _cols); // one slice
+	dev_array<double> d_Y(_rows * _cols); // one slice
 
 	// transfer CPU -> GPU
-	d_X.set(&h_X[0], _rows * cols_);
-	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_X.getData(), d_Y.getData(), cols_);
-	matrixTranspose(d_Y.getData(), cols_);
-	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_Y.getData(), d_X.getData(), cols_);
-	matrixTranspose(d_X.getData(), cols_);
+	d_X.set(&h_X[0], _rows * _cols);
+	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_X.getData(), d_Y.getData(), _cols);
+	matrixTranspose(d_Y.getData(), _cols);
+	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_Y.getData(), d_X.getData(), _cols);
+	matrixTranspose(d_X.getData(), _cols);
 
 	// transfer GPU -> CPU
-	d_X.get(&h_X[0], _rows * cols_);
+	d_X.get(&h_X[0], _rows * _cols);
 	cudaDeviceSynchronize();
 }
