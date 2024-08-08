@@ -35,9 +35,9 @@ namespace RapiDHT {
 				_bit_reversed_indices_x.resize(_rows);
 				_bit_reversed_indices_y.resize(_cols);
 				_bit_reversed_indices_z.resize(_depth);
-				bitReverse(&_bit_reversed_indices_x);
-				bitReverse(&_bit_reversed_indices_y);
-				bitReverse(&_bit_reversed_indices_z);
+				bitReverse(_bit_reversed_indices_x);
+				bitReverse(_bit_reversed_indices_y);
+				bitReverse(_bit_reversed_indices_z);
 			}
 			if (_mode == Modes::GPU) {
 				// Initialize Vandermonde matrice on the host
@@ -89,7 +89,7 @@ namespace RapiDHT {
 
 		void series1D(double* image, const Directions direction);
 
-		static void bitReverse(std::vector<size_t>* indices);
+		static void bitReverse(std::vector<size_t>& indices);
 		static void initializeKernelHost(std::vector<double>* kernel, const int cols);
 		static std::vector<double> DHT1D(const std::vector<double>& a, const std::vector<double>& kernel);
 		template <typename T>

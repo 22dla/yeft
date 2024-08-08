@@ -56,8 +56,7 @@ void HartleyTransform::InverseTransform(double* data) {
 	}
 }
 
-void HartleyTransform::bitReverse(std::vector<size_t>* indices_ptr) {
-	std::vector<size_t>& indices = *indices_ptr;
+void HartleyTransform::bitReverse(std::vector<size_t>& indices) {
 	if (indices.size() == 0) {
 		return;
 	}
