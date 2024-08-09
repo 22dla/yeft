@@ -47,6 +47,17 @@ namespace RapiDHT {
 		static void FDHT2D(std::vector<double>& image, const std::vector<std::vector<size_t>>& bit_reversed_indices);
 
 		/**
+		 * Bracewell R.N.et al.
+		 * Fast two - dimensional Hartley transform
+		 * //Proceedings of the IEEE. – 1986. – Ò. 74. – ¹. 9. – Ñ. 1282-1283.
+		 *
+		 * 2cas(a + b) = cas(a) cas(b) + cas(a) cas(-b) + cas(-a)cas(b) - cas(-a)cas(-b) =>
+		 *
+		 * => H(u, v) = [T(u, v) + T(u, M - v) + T(N - u, v) - T(N - u, M - v)] / 2.
+		 */
+		static void BracewellTransform2D(std::vector<double>& image, size_t rows, size_t cols);
+
+		/**
 		 * FHT2D(double* image_ptr) returns the Hartley transform
 		 * of an 3D array using a fast Hartley transform algorithm. The 3D transform
 		 * is equivalent to computing the 1D transform along each dimension of image.

@@ -2,51 +2,50 @@
 #include <rapidht.h>
 #include <utilities.h>
 #include <cmath>
+#include <numeric>
 #include <cstring>
 
 int main(int argc, char** argv) {
-	// Define global 3D array sizes
-	size_t rows = static_cast<int>(pow(2, 3));
-	size_t cols = rows;
+
+	size_t cols = static_cast<size_t>(pow(2, 14));
+	size_t rows = static_cast<size_t>(pow(2, 14));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
-	// If arguments are parced then exactly two arguments are required
-	if (argc >= 2) {
-		if (argc >= 3) {
-			rows = std::atoi(argv[1]);
-			cols = std::atoi(argv[2]);
-			if (argc >= 4) {
-				auto device = argv[3];
-				if (!strcmp(device, "CPU")) {
-					mode = RapiDHT::CPU;
-				} else if (!strcmp(device, "GPU")) {
-					mode = RapiDHT::GPU;
-				} else if (!strcmp(device, "RFFT")) {
-					mode = RapiDHT::RFFT;
-				} else {
-					std::cerr << "Error: device must be either CPU, GPU or RFFT" << std::endl;
-					return 1;
-				}
-			}
-		} else {
-			std::cerr << "Usage: " << argv[0] << " rows cols" << std::endl;
-			return 1;
-		}
-	}
+	// Обрабатываем аргументы командной строки, если они есть
+	auto args_map = parseCommandLine(argc, argv);
+	cols = parseSize(args_map, "--cols").value_or(cols);
+	rows = parseSize(args_map, "--rows").value_or(rows);
+	mode = parseMode(args_map).value_or(mode);
 
-	auto a2 = makeData<double>({ rows, cols });
+	// Выводим полученные значения
+	std::cout << "Cols: " << cols << std::endl;
+	std::cout << "Rows: " << rows << std::endl;
+	std::cout << "Mode: " << (mode == RapiDHT::CPU ? "CPU" :
+		mode == RapiDHT::GPU ? "GPU" : "RFFT") << std::endl << std::endl;
+
+	auto a2_1 = makeData<double>({ cols, rows });
+	auto a2_2(a2_1);
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
-	printData2D(a2.data(), rows, cols);
+	//printData2D(a2_1.data(), rows, cols);
 
-	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
-	ht.ForwardTransform(a2);
+	RapiDHT::HartleyTransform ht(cols, rows, 0, mode);
+	ht.ForwardTransform(a2_1);
+	ht.InverseTransform(a2_1);
 
-	printData2D(a2.data(), rows, cols);
+	//printData2D(a2_1.data(), rows, cols);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	showTime(common_start, common_finish, "Common time");
+
+	// Считаем ошибку
+	double sum = std::transform_reduce(
+		a2_1.begin(), a2_1.end(), a2_2.begin(), 0.0,
+		std::plus<>(),
+		[](double x, double y) { return std::abs(x - y); }
+	);
+	std::cout << "Error:\t" << sum << std::endl;
 	return 0;
 }
