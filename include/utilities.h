@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <iostream>
+#include <map>
+#include <optional>
+#include <rapidht.h>
 
 #ifdef DEBUG
 #define PROFILE_FUNCTION() Profiler __profiler(__FUNCTION__)
@@ -14,7 +17,7 @@
 
 class Profiler {
 public:
-	Profiler(const std::string& functionName) : 
+	Profiler(const std::string& functionName) :
 		m_functionName(functionName), m_startTime(std::chrono::high_resolution_clock::now()) {}
 	~Profiler() {
 		auto endTime = std::chrono::high_resolution_clock::now();
@@ -47,4 +50,12 @@ std::vector<T> makeData(std::initializer_list<size_t> sizes);
 
 void showTime(double startTime, double finishTime, std::string message);
 
+// command line processing
+std::optional<size_t> parseSize(const std::map<std::string, std::string>& args, const std::string& arg);
+
+std::optional<RapiDHT::Modes> parseMode(const std::map<std::string, std::string>& args);
+
+void printUsage(const std::string& programName);
+
+std::map<std::string, std::string> parseCommandLine(int argc, char* argv[]);
 #endif // !UTILITIES_H

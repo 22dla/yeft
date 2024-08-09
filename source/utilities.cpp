@@ -137,6 +137,59 @@ void showTime(double startTime, double finishTime, std::string message) {
 	std::cout << message + ":\t" << finishTime - startTime << " sec" << std::endl;
 }
 
+std::optional<RapiDHT::Modes> parseMode(const std::map<std::string, std::string>& args) {
+	auto getMode = [](const std::string& device) {
+		if (device == "CPU") {
+			return RapiDHT::Modes::CPU;
+		}
+		else if (device == "GPU") {
+			return RapiDHT::Modes::GPU;
+		}
+		else if (device == "RFFT") {
+			return RapiDHT::Modes::RFFT;
+		}
+		else {
+			throw std::invalid_argument("Error: device must be either CPU, GPU or RFFT");
+		}
+	};
+
+	auto it = args.find("--mode");
+	if (it != args.end()) {
+		auto mode = getMode(it->second);
+		return mode;
+	}
+	return {};
+}
+
+void printUsage(const std::string& programName) {
+	std::cout << "Usage: " << programName
+		<< " --rows <number> --mode <CPU|GPU|RFFT> [--cols <number>] [--depth <number>] [...]"
+		<< std::endl;
+}
+
+std::map<std::string, std::string> parseCommandLine(int argc, char* argv[]) {
+	std::map<std::string, std::string> args;
+	for (int i = 1; i < argc - 1; i += 2) {
+		args[argv[i]] = argv[i + 1];
+	}
+	return args;
+}
+
+std::optional<size_t> parseSize(const std::map<std::string, std::string>& args, const std::string& arg) {
+
+	auto getSize = [](const std::string& str) {
+		return std::stoul(str);
+	};
+
+	auto it = args.find(arg);
+	if (it != args.end()) {
+		auto arg_size_t = getSize(it->second);
+		return arg_size_t;
+	}
+	return {};
+}
+
+
 template void printData1D(const int* data, int length);
 template void printData1D(const double* data, int length);
 template void printData2D(const int* data, int rows, int cols);

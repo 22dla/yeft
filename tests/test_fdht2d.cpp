@@ -6,8 +6,8 @@
 
 int main(int argc, char** argv) {
 	// Define global 3D array sizes
-	int rows = static_cast<int>(pow(2, 3));
-	int cols = rows;
+	size_t rows = static_cast<int>(pow(2, 3));
+	size_t cols = rows;
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// If arguments are parced then exactly two arguments are required

@@ -5,33 +5,20 @@
 #include <numeric>
 #include <cstring>
 
+
 int main(int argc, char** argv) {
 	size_t rows = static_cast<size_t>(pow(2, 19));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
-	// If arguments is parced then exactly one argument is required
-	if (argc >= 2) {
-		rows = std::atoi(argv[1]);
+	// ќбрабатываем аргументы командной строки, если они есть
+	auto args_map = parseCommandLine(argc, argv);	
+	rows = parseSize(args_map, "--rows").value_or(rows);
+	mode = parseMode(args_map).value_or(mode);
 
-		if (argc >= 3) {
-			auto device = argv[2];
-
-			if (!strcmp(device, "CPU")) {
-				mode = RapiDHT::CPU;
-			} else if (!strcmp(device, "GPU")) {
-				mode = RapiDHT::GPU;
-			} else if (!strcmp(device, "RFFT")) {
-				mode = RapiDHT::RFFT;
-			} else {
-				std::cerr << "Error: device must be either CPU, GPU or RFFT" << std::endl;
-				return 1;
-			}
-		}
-		if (argc >= 4) {
-			std::cerr << "Usage: " << argv[0] << " rows" << std::endl;
-			return 1;
-		}
-	}
+	// ¬ыводим полученные значени€
+	std::cout << "Rows: " << rows << std::endl;
+	std::cout << "Mode: " << (mode == RapiDHT::CPU ? "CPU" :
+		mode == RapiDHT::GPU ? "GPU" : "RFFT") << std::endl;
 
 	auto a1_1 = makeData<double>({ rows });
 	auto a1_2 = makeData<double>({ rows });
