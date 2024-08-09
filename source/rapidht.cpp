@@ -35,7 +35,6 @@ namespace RapiDHT {
 	}
 
 	void HartleyTransform::ForwardTransform(std::vector<double>& data) {
-
 		switch (_mode) {
 		case RapiDHT::CPU:
 			if (rows() == 0 && depth() == 0) {
@@ -75,8 +74,8 @@ namespace RapiDHT {
 		ForwardTransform(data);
 
 		double denominator = 0;
-		if (cols() == 0 && depth() == 0) {	// 1D
-			denominator = 1.0f / rows();
+		if (rows() == 0 && depth() == 0) {	// 1D
+			denominator = 1.0f / cols();
 		}
 		else if (depth() == 0) {			// 2D
 			denominator = 1.0f / (rows() * cols());

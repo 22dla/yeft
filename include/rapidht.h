@@ -20,10 +20,10 @@ namespace RapiDHT {
 		void ForwardTransform(std::vector<double>& data);
 		void InverseTransform(std::vector<double>& data);
 
-		size_t rows() {
+		size_t cols() {
 			return _bit_reversed_indices_x.size();
 		}
-		size_t cols() {
+		size_t rows() {
 			return _bit_reversed_indices_y.size();
 		}
 		size_t depth() {

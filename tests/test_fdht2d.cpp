@@ -7,8 +7,8 @@
 
 int main(int argc, char** argv) {
 
-	size_t cols = static_cast<size_t>(pow(2, 14));
-	size_t rows = static_cast<size_t>(pow(2, 14));
+	size_t cols = static_cast<size_t>(pow(2, 5));
+	size_t rows = static_cast<size_t>(pow(2, 5));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// Обрабатываем аргументы командной строки, если они есть

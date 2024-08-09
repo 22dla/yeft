@@ -6,7 +6,7 @@
 #include <cstring>
 
 int main(int argc, char** argv) {
-	size_t cols = static_cast<size_t>(pow(2, 2));
+	size_t cols = static_cast<size_t>(pow(2, 10));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// Обрабатываем аргументы командной строки, если они есть
