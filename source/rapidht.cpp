@@ -7,17 +7,17 @@
 
 using namespace RapiDHT;
 
-HartleyTransform::HartleyTransform(size_t rows, size_t cols, size_t depth, Modes mode)
+HartleyTransform::HartleyTransform(size_t cols, size_t rows, size_t depth, Modes mode)
 	: _mode(mode) {
-	if (cols == 0 && depth > 0) {
+	if (rows == 0 && depth > 0) {
 		throw std::invalid_argument("Error (initialization): if cols is zero, depth must be zero.");
 	}
 
 	// Preparation to 1D transforms
 	if (_mode == Modes::CPU || _mode == Modes::RFFT) {
-		_bit_reversed_indices_x = bitReverse(rows);
-		if (cols > 0) {
-			_bit_reversed_indices_y = bitReverse(cols);
+		_bit_reversed_indices_x = bitReverse(cols);
+		if (rows > 0) {
+			_bit_reversed_indices_y = bitReverse(rows);
 		}
 		if (depth > 0) {
 			_bit_reversed_indices_z = bitReverse(depth);
@@ -25,9 +25,9 @@ HartleyTransform::HartleyTransform(size_t rows, size_t cols, size_t depth, Modes
 	}
 	if (_mode == Modes::GPU) {
 		// Initialize Vandermonde matrice on the host
-		initializeKernelHost(&_h_hartley_matrix_x, rows);
-		//initializeKernelHost(h_A, rows);
-		//initializeKernelHost(h_A, rows);
+		initializeKernelHost(&_h_hartley_matrix_x, cols);
+		//initializeKernelHost(h_A, cols);
+		//initializeKernelHost(h_A, cols);
 
 		// transfer CPU -> GPU
 		_d_hartley_matrix_x.resize(rows * cols);
@@ -39,7 +39,7 @@ void HartleyTransform::ForwardTransform(std::vector<double>& data) {
 
 	switch (_mode) {
 	case RapiDHT::CPU:
-		if (cols() == 0 && depth() == 0) {
+		if (rows() == 0 && depth() == 0) {
 			FDHT1D(data.begin(), data.end(), _bit_reversed_indices_x);
 		}
 		else if (depth() == 0) {
@@ -51,8 +51,8 @@ void HartleyTransform::ForwardTransform(std::vector<double>& data) {
 		break;
 
 	case RapiDHT::GPU:
-		if (cols() == 0 && depth() == 0) {
-			DHT1DCuda(data.data(), _h_hartley_matrix_x.data(), rows());
+		if (rows() == 0 && depth() == 0) {
+			DHT1DCuda(data.data(), _h_hartley_matrix_x.data(), cols());
 		}
 		else if (depth() == 0) {
 			DHT2DCuda(data.data());
@@ -60,7 +60,7 @@ void HartleyTransform::ForwardTransform(std::vector<double>& data) {
 		break;
 
 	case RapiDHT::RFFT:
-		if (cols() == 0 && depth() == 0) {
+		if (rows() == 0 && depth() == 0) {
 			RealFFT1D(data, _bit_reversed_indices_x);
 		}
 		else if (depth() == 0) {
@@ -175,24 +175,20 @@ void HartleyTransform::transpose(std::vector<std::vector<T>>* matrix_ptr) {
 	}
 }
 
-void HartleyTransform::transposeSimple(double* matrix, const int rows, const int cols) {
-	if (matrix == nullptr) {
-		throw std::invalid_argument("The pointer to matrix is null.");
-	}
-
-	if (rows == cols) {
+void HartleyTransform::transpose(std::vector<double>& matrix, int cols, int rows) {
+	if (cols == rows) {// Для квадратных матриц память не выделяем
 	#pragma omp parallel for
-		// Square matrix
-		for (int i = 0; i < rows; ++i) {
+		for (int i = 0; i < cols; ++i) {
 		#pragma omp parallel for
 			for (int j = i + 1; j < cols; ++j) {
-				std::swap(matrix[i * cols + j], matrix[j * cols + i]);
+				int index1 = i * cols + j;
+				int index2 = j * cols + i;
+				std::swap(matrix[index1], matrix[index2]);
 			}
 		}
 	}
-	else {
-		// Non-square matrix
-		std::vector<double> transposed(rows * cols);
+	else {// Неквадратная матрица: создаем новый вектор для транспонированной матрицы
+		std::vector<double> transposed(cols * rows);
 	#pragma omp parallel for
 		for (int i = 0; i < rows; ++i) {
 		#pragma omp parallel for
@@ -200,9 +196,7 @@ void HartleyTransform::transposeSimple(double* matrix, const int rows, const int
 				transposed[j * rows + i] = matrix[i * cols + j];
 			}
 		}
-		//std::memcpy(matrix, transposed.data(), sizeof(double) * rows * cols);
-		//require to check
-		std::copy(transposed.data(), transposed.data() + (rows * cols), matrix);
+		matrix = std::move(transposed);
 	}
 }
 
@@ -241,23 +235,6 @@ std::vector<double> HartleyTransform::transpose3D(
 
 	return output;
 }
-
-//void HartleyTransform::series1D(std::vector<double>& image, const Directions direction) {
-//	
-//
-//	if (_mode == Modes::CPU) {
-//	#pragma omp parallel for
-//		for (int i = 0; i < rows(); ++i) {
-//			FDHT1D(image_ptr + i * cols(), direction);
-//		}
-//	}
-//	if (_mode == Modes::RFFT) {
-//	#pragma omp parallel for
-//		for (int i = 0; i < rows(); ++i) {
-//			RealFFT1D(image_ptr + i * cols(), direction);
-//		}
-//	}
-//}
 
 template <typename Iter>
 void HartleyTransform::FDHT1D(Iter first, Iter last, const std::vector<size_t>& bit_reversed_indices) {
@@ -329,8 +306,8 @@ void HartleyTransform::FDHT2D(std::vector<double>& image, const std::vector<std:
 		throw std::invalid_argument("Error: bit_reversed_indices.size() must be 2");
 	}
 
-	auto rows = bit_reversed_indices[0].size();
-	auto cols = bit_reversed_indices[1].size();
+	auto cols = bit_reversed_indices[0].size();
+	auto rows = bit_reversed_indices[1].size();
 
 	if (image.size() != rows * cols) {
 		throw std::invalid_argument("Error: invalid sizes");
@@ -340,22 +317,27 @@ void HartleyTransform::FDHT2D(std::vector<double>& image, const std::vector<std:
 #pragma omp parallel for
 	for (int i = 0; i < rows; ++i) {
 		// Вычисление начала и конца строки
-		auto row_start = image.begin() + i * cols;
-		auto row_end = row_start + cols;
+		auto start = image.begin() + i * cols;
+		auto end = start + cols;
 
 		// Вызов FDHT1D для одной строки
-		FDHT1D(row_start, row_end, bit_reversed_indices[0]);
+		FDHT1D(start, end, bit_reversed_indices[0]);
 	}
 
-	//	transposeSimple(image_ptr, rows(), cols());
+	transpose(image, cols, rows);
 
 	// 1D transforms along Y dimension
-/*#pragma omp parallel for
-	for (int i = 0; i < rows; ++i) {
-		FDHT1D(image_ptr + i * cols(), bit_reversed_indices[0]);
-	}*/
+#pragma omp parallel for
+	for (int i = 0; i < cols; ++i) {
+		// Вычисление начала и конца строки
+		auto start = image.begin() + i * rows;
+		auto end = start + rows;
 
-	//transposeSimple(image_ptr, cols(), rows());
+		// Вызов FDHT1D для одной строки
+		FDHT1D(start, end, bit_reversed_indices[1]);
+	}
+
+	transpose(image, rows, cols);
 
 	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }

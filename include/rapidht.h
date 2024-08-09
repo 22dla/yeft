@@ -77,6 +77,7 @@ namespace RapiDHT {
 		static std::vector<double> DHT1D(const std::vector<double>& a, const std::vector<double>& kernel);
 		template <typename T>
 		static void transpose(std::vector<std::vector<T>>* image);
+		static void transpose(std::vector<double>& matrix, int cols, int rows);
 		static void transposeSimple(double* image, int rows, int cols);
 		static std::vector<double> transpose3D(
 			const std::vector<double>& input,
