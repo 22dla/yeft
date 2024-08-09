@@ -8,7 +8,7 @@ int main(int argc, char** argv) {
 	// Define global 3D array sizes
 	int rows = static_cast<int>(pow(2, 10));
 	int cols = rows;
-	int images_num = 1;
+	int images_num = 10;
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// If arguments are parced then exactly two arguments are required
@@ -47,13 +47,8 @@ int main(int argc, char** argv) {
 
 	std::cout << "HT calculation...";
 	auto calculation_start = std::chrono::high_resolution_clock::now();
-	RapiDHT::HartleyTransform ht(-1, cols, 0, mode);
-	for (int i = 0; i < images_num; ++i) {
-		//printData2D(ptr + i * cols * rows, rows, cols);
-		//ht.ForwardTransform(ptr + i * cols * rows);
-		ht.ForwardTransform(a3);
-		//printData2D(ptr + i * cols * rows, rows, cols);
-	}
+	RapiDHT::HartleyTransform ht(rows, cols, images_num, mode);
+	ht.ForwardTransform(a3);
 	auto calculation_finish = std::chrono::high_resolution_clock::now();
 	auto calculation_time = std::chrono::duration_cast<std::chrono::milliseconds>(calculation_finish - calculation_start);
 	std::cout << "time:\t" << calculation_time.count() / 1000.0 << std::endl;

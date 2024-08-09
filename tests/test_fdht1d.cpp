@@ -2,10 +2,11 @@
 #include <utilities.h>
 #include <iostream>
 #include <cmath>
+#include <numeric>
 #include <cstring>
 
 int main(int argc, char** argv) {
-	int rows = static_cast<int>(pow(2, 2));
+	size_t rows = static_cast<size_t>(pow(2, 19));
 	RapiDHT::Modes mode = RapiDHT::CPU;
 
 	// If arguments is parced then exactly one argument is required
@@ -32,30 +33,28 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a1 = makeData<double>({ rows });
-	auto a2 = makeData<double>({ rows });
+	auto a1_1 = makeData<double>({ rows });
+	auto a1_2 = makeData<double>({ rows });
 	//printData1D(a1);
-
-	auto ptr = a1.data();
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
 	RapiDHT::HartleyTransform ht(rows, 0, 0, mode);
 	
-	ht.ForwardTransform(ptr);
-	ht.InverseTransform(ptr);
+	ht.ForwardTransform(a1_1);
+	ht.InverseTransform(a1_1);
 
 	//printData1D(a1);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	showTime(common_start, common_finish, "Common time");
 
-	double sum = 0;
-	for (int i = 0; i < rows; ++i) {
-		sum += std::abs(a2[i] - ptr[i]);
-		//std::cout << i << " " << a2[i] << " " << ptr[i] << " " << std::abs(a2[i] - ptr[i]) << std::endl;
-	}
+	double sum = std::transform_reduce(
+		a1_1.begin(), a1_1.end(), a1_2.begin(), 0.0,
+		std::plus<>(),
+		[](double x, double y) { return std::abs(x - y); }
+	);
 	std::cout << "Error:\t" << sum << std::endl;
 
 	return 0;

@@ -110,20 +110,20 @@ std::vector<std::vector<std::vector<T>>> makeData3DArray(
 }
 
 template <typename T>
-std::vector<T> makeData(std::initializer_list<int> sizes) {
-	int num_dims = sizes.size();
-	std::vector<int> dim_sizes(sizes);
-	for (int i = 0; i < num_dims; i++) {
+std::vector<T> makeData(std::initializer_list<size_t> sizes) {
+	size_t num_dims = sizes.size();
+	std::vector<size_t> dim_sizes(sizes);
+	for (size_t i = 0; i < num_dims; ++i) {
 		if (dim_sizes[i] < 0) {
 			throw std::invalid_argument("Invalid size");
 		}
 	}
 	std::vector<T> data(1);
-	for (int i = 0; i < num_dims; i++) {
+	for (size_t i = 0; i < num_dims; ++i) {
 		data.resize(data.size() * dim_sizes[i]);
 	}
 	// fill massive with random values
-	for (int idx = 0; idx < data.size(); ++idx) {
+	for (size_t idx = 0; idx < data.size(); ++idx) {
 		data[idx] = static_cast<T>(dim_sizes[0] + std::cos(std::asin(0.1) / (idx + 1)) -
 			std::sin(std::cos(idx / dim_sizes[0])) +
 			std::tan(idx * dim_sizes[0]) + 2 + idx) / (dim_sizes[0] * dim_sizes[0]);
@@ -145,7 +145,7 @@ template void writeMatrixToCSV(const double* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
 template void writeMatrixToCSV(const int* matrix, const size_t rows,
 	const size_t cols, const std::string& file_path);
-template std::vector<int> makeData(std::initializer_list<int> sizes);
-template std::vector<double> makeData(std::initializer_list<int> size);
+template std::vector<int> makeData(std::initializer_list<size_t> sizes);
+template std::vector<double> makeData(std::initializer_list<size_t> size);
 template std::vector<std::vector<std::vector<int>>> makeData3DArray(int n, int m, int l);
 template std::vector<std::vector<std::vector<double>>> makeData3DArray(int n, int m, int l);

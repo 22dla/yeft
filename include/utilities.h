@@ -43,7 +43,7 @@ std::vector<std::vector<std::vector<T>>> makeData3DArray(
 	int cols, int rows, int depth);
 
 template <typename T>
-std::vector<T> makeData(std::initializer_list<int> sizes);
+std::vector<T> makeData(std::initializer_list<size_t> sizes);
 
 void showTime(double startTime, double finishTime, std::string message);
 

@@ -2,35 +2,69 @@
 #include <rapidht.h>
 #include <utilities.h>
 #include <complex>
+#include <array>
 #include <kernel.h>
 
 using namespace RapiDHT;
 
-void HartleyTransform::ForwardTransform(double* data) {
+HartleyTransform::HartleyTransform(size_t rows, size_t cols, size_t depth, Modes mode)
+	: _mode(mode) {
+	if (cols == 0 && depth > 0) {
+		throw std::invalid_argument("Error (initialization): if cols is zero, depth must be zero.");
+	}
+
+	// Preparation to 1D transforms
+	if (_mode == Modes::CPU || _mode == Modes::RFFT) {
+		_bit_reversed_indices_x = bitReverse(rows);
+		if (cols > 0) {
+			_bit_reversed_indices_y = bitReverse(cols);
+		}
+		if (depth > 0) {
+			_bit_reversed_indices_z = bitReverse(depth);
+		}
+	}
+	if (_mode == Modes::GPU) {
+		// Initialize Vandermonde matrice on the host
+		initializeKernelHost(&_h_hartley_matrix_x, rows);
+		//initializeKernelHost(h_A, rows);
+		//initializeKernelHost(h_A, rows);
+
+		// transfer CPU -> GPU
+		_d_hartley_matrix_x.resize(rows * cols);
+		_d_hartley_matrix_x.set(&_h_hartley_matrix_x[0], rows * cols);
+	}
+}
+
+void HartleyTransform::ForwardTransform(std::vector<double>& data) {
 
 	switch (_mode) {
 	case RapiDHT::CPU:
-		if (_cols == 0 && _depth == 0) {
-			FDHT1D(data);
+		if (cols() == 0 && depth() == 0) {
+			FDHT1D(data.begin(), data.end(), _bit_reversed_indices_x);
 		}
-		else if (_depth == 0) {
-			FDHT2D(data);
+		else if (depth() == 0) {
+			FDHT2D(data, { _bit_reversed_indices_x, _bit_reversed_indices_y });
+		}
+		else {
+			FDHT3D(data, { _bit_reversed_indices_x, _bit_reversed_indices_y, _bit_reversed_indices_z });
 		}
 		break;
+
 	case RapiDHT::GPU:
-		if (_cols == 0 && _depth == 0) {
-			DHT1DCuda(data, _h_Vandermonde_Matrix_x.data(), _rows);
+		if (cols() == 0 && depth() == 0) {
+			DHT1DCuda(data.data(), _h_hartley_matrix_x.data(), rows());
 		}
-		else if (_depth == 0) {
-			DHT2DCuda(data);
+		else if (depth() == 0) {
+			DHT2DCuda(data.data());
 		}
 		break;
+
 	case RapiDHT::RFFT:
-		if (_cols == 0 && _depth == 0) {
-			RealFFT1D(data);
+		if (cols() == 0 && depth() == 0) {
+			RealFFT1D(data, _bit_reversed_indices_x);
 		}
-		else if (_depth == 0) {
-			FDHT2D(data);
+		else if (depth() == 0) {
+			RealFFT2D(data, { _bit_reversed_indices_x, _bit_reversed_indices_y });
 		}
 		break;
 	default:
@@ -38,32 +72,35 @@ void HartleyTransform::ForwardTransform(double* data) {
 	}
 }
 
-void HartleyTransform::InverseTransform(double* data) {
-	this->ForwardTransform(data);
+void HartleyTransform::InverseTransform(std::vector<double>& data) {
+	ForwardTransform(data);
 
 	double denominator = 0;
-	if (_cols == 0 && _depth == 0) {	// 1D
-		denominator = 1.0f / _rows;
+	if (cols() == 0 && depth() == 0) {	// 1D
+		denominator = 1.0f / rows();
 	}
-	else if (_depth == 0) {			// 2D
-		denominator = 1.0f / (_rows * _cols);
+	else if (depth() == 0) {			// 2D
+		denominator = 1.0f / (rows() * cols());
 	}
 	else {							// 3D
-		denominator = 1.0f / (_rows * _cols * _depth);
+		denominator = 1.0f / (rows() * cols() * depth());
 	}
-	for (int i = 0; i < _rows; ++i) {
+	for (int i = 0; i < rows(); ++i) {
 		data[i] *= denominator;
 	}
 }
 
-void HartleyTransform::bitReverse(std::vector<size_t>& indices) {
-	if (indices.size() == 0) {
-		return;
+std::vector<size_t> HartleyTransform::bitReverse(size_t length) {
+	if (length == 0) {
+		return {};
 	}
-	const int kLog2n = static_cast<int>(log2f(static_cast<float>(indices.size())));
+	const int kLog2n = static_cast<int>(log2f(static_cast<float>(length)));
+
+	// result vector of indices
+	std::vector<size_t> indices(length);
 
 	// array to store binary number
-	std::vector<bool> binary_num(indices.size());
+	std::vector<bool> binary_num(length);
 
 	indices[0] = 0;
 	for (int j = 1; j < indices.size(); ++j) {
@@ -90,6 +127,7 @@ void HartleyTransform::bitReverse(std::vector<size_t>& indices) {
 		}
 		indices[j] = dec_value;
 	}
+	return indices;
 }
 
 void HartleyTransform::initializeKernelHost(std::vector<double>* kernel, const int cols) {
@@ -168,46 +206,81 @@ void HartleyTransform::transposeSimple(double* matrix, const int rows, const int
 	}
 }
 
-void HartleyTransform::series1D(double* image_ptr, const Directions direction) {
-	PROFILE_FUNCTION();
+std::vector<double> HartleyTransform::transpose3D(
+	const std::vector<double>& input,
+	size_t rows, size_t cols, size_t depth,
+	const std::array<size_t, 3>& old_indices,
+	const std::array<size_t, 3>& new_indices) {
+	// Размеры в старом и новом порядке
+	std::array<size_t, 3> old_dims = { rows, cols, depth };
+	std::array<size_t, 3> new_dims = { old_dims[old_indices[0]], old_dims[old_indices[1]], old_dims[old_indices[2]] };
 
-	if (image_ptr == nullptr) {
-		throw std::invalid_argument("The pointer to image is null.");
-	}
+	std::vector<double> output(new_dims[0] * new_dims[1] * new_dims[2]);
 
-	if (_mode == Modes::CPU) {
-	#pragma omp parallel for
-		for (int i = 0; i < _rows; ++i) {
-			this->FDHT1D(image_ptr + i * _cols, direction);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < cols; ++j) {
+			for (size_t k = 0; k < depth; ++k) {
+				// Индексы в исходном массиве
+				std::array<size_t, 3> old_idx = { i, j, k };
+				size_t index_in = old_idx[old_indices[0]] * old_dims[1] * old_dims[2]
+					+ old_idx[old_indices[1]] * old_dims[2]
+					+ old_idx[old_indices[2]];
+
+				// Индексы в новом массиве
+				std::array<size_t, 3> new_idx = { old_idx[old_indices[new_indices[0]]],
+												 old_idx[old_indices[new_indices[1]]],
+												 old_idx[old_indices[new_indices[2]]] };
+				size_t index_out = new_idx[0] * new_dims[1] * new_dims[2]
+					+ new_idx[1] * new_dims[2]
+					+ new_idx[2];
+
+				output[index_out] = input[index_in];
+			}
 		}
 	}
-	if (_mode == Modes::RFFT) {
-	#pragma omp parallel for
-		for (int i = 0; i < _rows; ++i) {
-			RealFFT1D(image_ptr + i * _cols, direction);
-		}
-	}
+
+	return output;
 }
 
-void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
-	if (vec == nullptr) {
-		throw std::invalid_argument("The pointer to vector is null.");
+//void HartleyTransform::series1D(std::vector<double>& image, const Directions direction) {
+//	
+//
+//	if (_mode == Modes::CPU) {
+//	#pragma omp parallel for
+//		for (int i = 0; i < rows(); ++i) {
+//			FDHT1D(image_ptr + i * cols(), direction);
+//		}
+//	}
+//	if (_mode == Modes::RFFT) {
+//	#pragma omp parallel for
+//		for (int i = 0; i < rows(); ++i) {
+//			RealFFT1D(image_ptr + i * cols(), direction);
+//		}
+//	}
+//}
+
+template <typename Iter>
+void HartleyTransform::FDHT1D(Iter first, Iter last, const std::vector<size_t>& bit_reversed_indices) {
+	if (first == last) {
+		return;
 	}
 
-	// Indices for bit reversal operation
-	// and length of vector depending of direction
-	int length = 0;
-	auto bit_reversed_indices = this->chooseRevercedIndices(&length, direction);
-
+	auto length = std::distance(first, last);
+	if (length != bit_reversed_indices.size()) {
+		throw std::invalid_argument("Error: size of vec must be equal size of bit_reversed_indices");
+	}
 	if (length < 0) {
 		std::cout << "Error: length must be non-negative." << std::endl;
 		throw std::invalid_argument("Error: length must be non-negative.");
 	}
+
 	// Check that length is power of 2
 	if (std::ceil(std::log2(length)) != std::floor(std::log2(length))) {
 		std::cout << "Error: length must be a power of two." << std::endl;
 		throw std::invalid_argument("Error: length must be a power of two.");
 	}
+
+	std::vector<typename std::iterator_traits<Iter>::value_type> vec(first, last);
 
 	for (int i = 1; i < length; ++i) {
 		size_t j = bit_reversed_indices[i];
@@ -244,71 +317,86 @@ void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
 			}
 		}
 	}
+
+	std::copy(vec.begin(), vec.end(), first);
 }
 
-void HartleyTransform::FDHT2D(double* image_ptr) {
-	if (image_ptr == nullptr) {
-		std::cout << "The pointer to image is null." << std::endl;
-		throw std::invalid_argument("The pointer to image is null.");
-	}
-	if (_rows < 0 || _cols < 0) {
-		std::cout << "Error: rows, and cols must be non-negative." << std::endl;
-		throw std::invalid_argument("Error: rows, and cols must be non-negative.");
-	}
-
+void HartleyTransform::FDHT2D(std::vector<double>& image, const std::vector<std::vector<size_t>>& bit_reversed_indices) {
+	PROFILE_FUNCTION();
 	// writeMatrixToCSV(image_ptr, rows, cols, "matrix1.txt");
 
-	// 1D transforms along X dimension
-	this->series1D(image_ptr, DIRECTION_X);
+	if (bit_reversed_indices.size() != 2) {
+		throw std::invalid_argument("Error: bit_reversed_indices.size() must be 2");
+	}
 
-	transposeSimple(image_ptr, _rows, _cols);
+	auto rows = bit_reversed_indices[0].size();
+	auto cols = bit_reversed_indices[1].size();
+
+	if (image.size() != rows * cols) {
+		throw std::invalid_argument("Error: invalid sizes");
+	}
+
+	// 1D transforms along X dimension
+#pragma omp parallel for
+	for (int i = 0; i < rows; ++i) {
+		// Вычисление начала и конца строки
+		auto row_start = image.begin() + i * cols;
+		auto row_end = row_start + cols;
+
+		// Вызов FDHT1D для одной строки
+		FDHT1D(row_start, row_end, bit_reversed_indices[0]);
+	}
+
+	//	transposeSimple(image_ptr, rows(), cols());
 
 	// 1D transforms along Y dimension
-	this->series1D(image_ptr, DIRECTION_Y);
+/*#pragma omp parallel for
+	for (int i = 0; i < rows; ++i) {
+		FDHT1D(image_ptr + i * cols(), bit_reversed_indices[0]);
+	}*/
 
-	transposeSimple(image_ptr, _cols, _rows);
+	//transposeSimple(image_ptr, cols(), rows());
 
 	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }
 
-size_t* HartleyTransform::chooseRevercedIndices(int* length, const Directions direction) {
+void HartleyTransform::FDHT3D(std::vector<double>& cube, const std::vector<std::vector<size_t>>& bit_reversed_indices) {
+	//if (image_ptr == nullptr) {
+	//	std::cout << "The pointer to image is null." << std::endl;
+	//	throw std::invalid_argument("The pointer to image is null.");
+	//}
+	//if (rows() < 0 || cols() < 0) {
+	//	std::cout << "Error: rows, and cols must be non-negative." << std::endl;
+	//	throw std::invalid_argument("Error: rows, and cols must be non-negative.");
+	//}
 
-	size_t* bit_reversed_indices;
-	switch (direction) {
-	case DIRECTION_X:
-		*length = _rows;
-		bit_reversed_indices = _bit_reversed_indices_x.data();
-		break;
-	case DIRECTION_Y:
-		*length = _cols;
-		bit_reversed_indices = _bit_reversed_indices_y.data();
-		break;
-	case DIRECTION_Z:
-		*length = _depth;
-		bit_reversed_indices = _bit_reversed_indices_z.data();
-		break;
-	default:
-		break;
-	}
-	return bit_reversed_indices;
+	//// writeMatrixToCSV(image_ptr, rows, cols, "matrix1.txt");
+
+	//// 1D transforms along X dimension
+	//series1D(image_ptr, DIRECTION_X);
+
+	//transposeSimple(image_ptr, rows(), cols());
+
+	//// 1D transforms along Y dimension
+	//series1D(image_ptr, DIRECTION_Y);
+
+	//transposeSimple(image_ptr, cols(), rows());
+
+	//// 1D transforms along Y dimension
+	//series1D(image_ptr, DIRECTION_Z);
+
+	//transposeSimple(image_ptr, cols(), rows());
+
+	// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 }
 
 // test functions
-void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
-	if (vec == nullptr) {
-		std::cout << "The pointer to vector is null." << std::endl;
-		throw std::invalid_argument("The pointer to vector is null.");
-	}
+void HartleyTransform::RealFFT1D(std::vector<double>& vec, const std::vector<size_t>& bit_reversed_indices) {
 
 	// Indices for bit reversal operation
 	// and length of vector depending of direction
-	int length = 0;
-	auto bit_reversed_indices = this->chooseRevercedIndices(&length, direction);
+	auto length = bit_reversed_indices.size();
 
-	if (length < 0) {
-		std::cout << "Error: length must be non-negative." << std::endl;
-		throw std::invalid_argument("Error: length must be non-negative.");
-	}
 	// Check that length is power of 2
 	if (std::ceil(std::log2(length)) != std::floor(std::log2(length))) {
 		std::cout << "Error: length must be a power of two." << std::endl;
@@ -322,7 +410,8 @@ void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
 	}
 	unsigned int k = length;
 	unsigned int n;
-	double thetaT = 3.14159265358979323846264338328L / length;
+	const double kPi = std::acos(-1);
+	double thetaT = kPi / length;
 	std::complex<double> phiT = std::complex<double>(cos(thetaT), -sin(thetaT)), T;
 	while (k > 1) {
 		n = k;
@@ -361,7 +450,11 @@ void HartleyTransform::RealFFT1D(double* vec, const Directions direction) {
 	}
 }
 
-void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
+void HartleyTransform::RealFFT2D(std::vector<double>& image, const std::vector<std::vector<size_t>>& bit_reversed_indices) {
+	return;
+}
+
+void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, int length) {
 	// Allocate memory on the device
 	dev_array<double> d_A(length * length);	// matrix for one line
 	dev_array<double> d_x(length);			// input vector
@@ -381,17 +474,17 @@ void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, const int length) {
 
 void HartleyTransform::DHT2DCuda(double* h_X) {
 	// Allocate memory on the device
-	dev_array<double> d_X(_rows * _cols); // one slice
-	dev_array<double> d_Y(_rows * _cols); // one slice
+	dev_array<double> d_X(rows() * cols()); // one slice
+	dev_array<double> d_Y(rows() * cols()); // one slice
 
 	// transfer CPU -> GPU
-	d_X.set(&h_X[0], _rows * _cols);
-	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_X.getData(), d_Y.getData(), _cols);
-	matrixTranspose(d_Y.getData(), _cols);
-	matrixMultiplication(_d_Vandermonde_Matrix_x.getData(), d_Y.getData(), d_X.getData(), _cols);
-	matrixTranspose(d_X.getData(), _cols);
+	d_X.set(&h_X[0], rows() * cols());
+	matrixMultiplication(_d_hartley_matrix_x.getData(), d_X.getData(), d_Y.getData(), cols());
+	matrixTranspose(d_Y.getData(), cols());
+	matrixMultiplication(_d_hartley_matrix_x.getData(), d_Y.getData(), d_X.getData(), cols());
+	matrixTranspose(d_X.getData(), cols());
 
 	// transfer GPU -> CPU
-	d_X.get(&h_X[0], _rows * _cols);
+	d_X.get(&h_X[0], rows() * cols());
 	cudaDeviceSynchronize();
 }

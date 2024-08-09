@@ -34,19 +34,17 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a3 = makeData<double>({ rows, cols });
+	auto a2 = makeData<double>({ rows, cols });
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
-	auto ptr = a3.data();
-
-	printData2D(ptr, rows, cols);
+	printData2D(a2.data(), rows, cols);
 
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
-	ht.ForwardTransform(ptr);
+	ht.ForwardTransform(a2);
 
-	printData2D(ptr, rows, cols);
+	printData2D(a2.data(), rows, cols);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	showTime(common_start, common_finish, "Common time");

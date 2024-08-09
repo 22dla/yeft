@@ -31,6 +31,17 @@ __global__ void matrixVectorMultKernel(double* A, double* x, double* y, int N) {
 	}
 }
 
+__global__ void imageVectorMultKernel(uint8_t* A, uint8_t* x, uint8_t* y, int N) {
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < N) {
+		double sum = 0.0f;
+		for (int j = 0; j < N; j++) {
+			sum += A[i * N + j] * x[j];
+		}
+		y[i] = sum;
+	}
+}
+
 __global__ void matrixTransposeKernel(double* A, int N) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int j = blockIdx.y * blockDim.y + threadIdx.y;
@@ -68,6 +79,16 @@ void vectorMatrixMultiplication(double* A, double* x, double* y, const int N) {
 	blocksPerGrid = (N > 512) ? (N + threadsPerBlock - 1) / threadsPerBlock : 1;
 
 	matrixVectorMultKernel <<< blocksPerGrid, threadsPerBlock >>> (A, x, y, N);
+}
+
+void vectorImageMultiplication(uint8_t* A, uint8_t* x, uint8_t* y, int N) {
+
+	int threadsPerBlock, blocksPerGrid;
+
+	threadsPerBlock = (N > 512) ? 512 : N;
+	blocksPerGrid = (N > 512) ? (N + threadsPerBlock - 1) / threadsPerBlock : 1;
+
+	imageVectorMultKernel <<< blocksPerGrid, threadsPerBlock >>> (A, x, y, N);
 }
 
 void matrixTranspose(double* A, const int N) {
