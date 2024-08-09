@@ -23,14 +23,21 @@ namespace RapiDHT {
 			}
 		}
 		if (_mode == Modes::GPU) {
-			// Initialize Vandermonde matrice on the host
+			// TODO придумать, как убрать это отсюда. Сейчас нужно для корректно работы cols(), rows(), depth()
+			_bit_reversed_indices_x.resize(cols);
+			if (rows > 0) {
+				_bit_reversed_indices_y.resize(rows);
+			}
+			if (depth > 0) {
+				_bit_reversed_indices_z.resize(depth);
+			}
+
+			// Initialize matrice of Hartley transorm on the host
 			initializeKernelHost(&_h_hartley_matrix_x, cols);
-			//initializeKernelHost(h_A, cols);
-			//initializeKernelHost(h_A, cols);
 
 			// transfer CPU -> GPU
-			_d_hartley_matrix_x.resize(rows * cols);
-			_d_hartley_matrix_x.set(&_h_hartley_matrix_x[0], rows * cols);
+			_d_hartley_matrix_x.resize(cols * cols);
+			_d_hartley_matrix_x.set(&_h_hartley_matrix_x[0], cols * cols);
 		}
 	}
 
@@ -50,7 +57,7 @@ namespace RapiDHT {
 
 		case RapiDHT::GPU:
 			if (rows() == 0 && depth() == 0) {
-				DHT1DCuda(data.data(), _h_hartley_matrix_x.data(), cols());
+				DHT1DCuda(data.data(), _d_hartley_matrix_x, cols());
 			}
 			else if (depth() == 0) {
 				DHT2DCuda(data.data());
@@ -453,16 +460,13 @@ namespace RapiDHT {
 		return;
 	}
 
-	void HartleyTransform::DHT1DCuda(double* h_x, double* h_A, int length) {
+	void HartleyTransform::DHT1DCuda(double* h_x, const dev_array<double>& d_A, int length) {
 		// Allocate memory on the device
-		dev_array<double> d_A(length * length);	// matrix for one line
 		dev_array<double> d_x(length);			// input vector
 		dev_array<double> d_y(length);			// output vector
 
 		//writeMatrixToCSV(h_A.data(), length, length, "matrix.csv");
 
-		// transfer CPU -> GPU
-		d_A.set(&h_A[0], length * length);
 		// transfer CPU -> GPU
 		d_x.set(h_x, length * length);
 		vectorMatrixMultiplication(d_A.getData(), d_x.getData(), d_y.getData(), length);

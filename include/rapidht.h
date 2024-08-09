@@ -68,7 +68,7 @@ namespace RapiDHT {
 		* DHT1DCuda(double* h_x, double* h_A, const int length) returns the Hartley
 		* transform of an 1D array using a matrix x vector multiplication.
 		*/
-		void DHT1DCuda(double* h_x, double* h_A, int length);
+		void DHT1DCuda(double* h_x, const dev_array<double>& d_A, int length);
 
 		/**
 		* DHT2DCuda(double* image) returns the Hartley
