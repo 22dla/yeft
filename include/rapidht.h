@@ -49,13 +49,13 @@ namespace RapiDHT {
 		/**
 		 * Bracewell R.N.et al.
 		 * Fast two - dimensional Hartley transform
-		 * //Proceedings of the IEEE. – 1986. – Ò. 74. – ¹. 9. – Ñ. 1282-1283.
+		 * //Proceedings of the IEEE. â€“ 1986. â€“ Ð¢. 74. â€“ â„–. 9. â€“ Ð¡. 1282-1283.
 		 *
 		 * 2cas(a + b) = cas(a) cas(b) + cas(a) cas(-b) + cas(-a)cas(b) - cas(-a)cas(-b) =>
 		 *
 		 * => H(u, v) = [T(u, v) + T(u, M - v) + T(N - u, v) - T(N - u, M - v)] / 2.
 		 */
-		static void BracewellTransform2D(std::vector<double>& image, size_t rows, size_t cols);
+		static void BracewellTransform2DCPU(std::vector<double>& image, size_t rows, size_t cols);
 
 		/**
 		 * FHT2D(double* image_ptr) returns the Hartley transform
@@ -68,13 +68,13 @@ namespace RapiDHT {
 		* DHT1DCuda(double* h_x, double* h_A, const int length) returns the Hartley
 		* transform of an 1D array using a matrix x vector multiplication.
 		*/
-		void DHT1DCuda(double* h_x, const dev_array<double>& d_A, int length);
+		static void DHT1DCuda(double* h_x, const dev_array<double>& d_A, size_t length);
 
 		/**
 		* DHT2DCuda(double* image) returns the Hartley
 		* transform of an 1D array using a matrix x matrix multiplication.
 		*/
-		void DHT2DCuda(double* image);
+		static void DHT2DCuda(double* h_X, const dev_array<double>& d_A, size_t cols);
 
 		/**
 		 * RealFFT1D(double* vector) returns the Fourier transform
@@ -101,9 +101,8 @@ namespace RapiDHT {
 		std::vector<size_t> _bit_reversed_indices_y;
 		std::vector<size_t> _bit_reversed_indices_z;
 		
-		// TODO èñïðàâèòü íàçâàíèå
-		std::vector<double> _h_hartley_matrix_x;
-		dev_array<double> _d_hartley_matrix_x;
+		// TODO do for a common case
+		dev_array<double> _d_hartley_matrix;
 	};
 }
 

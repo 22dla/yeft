@@ -27,17 +27,24 @@ namespace RapiDHT {
 			_bit_reversed_indices_x.resize(cols);
 			if (rows > 0) {
 				_bit_reversed_indices_y.resize(rows);
+				if (rows != cols) {
+
+				}
 			}
 			if (depth > 0) {
 				_bit_reversed_indices_z.resize(depth);
+				if (depth != cols) {
+
+				}
 			}
 
 			// Initialize matrice of Hartley transorm on the host
-			initializeKernelHost(&_h_hartley_matrix_x, cols);
+			std::vector<double> _h_hartley_matrix;
+			initializeKernelHost(&_h_hartley_matrix, cols);
 
 			// transfer CPU -> GPU
-			_d_hartley_matrix_x.resize(cols * cols);
-			_d_hartley_matrix_x.set(&_h_hartley_matrix_x[0], cols * cols);
+			_d_hartley_matrix.resize(cols * cols);
+			_d_hartley_matrix.set(&_h_hartley_matrix[0], cols * cols);
 		}
 	}
 
@@ -57,10 +64,10 @@ namespace RapiDHT {
 
 		case RapiDHT::GPU:
 			if (rows() == 0 && depth() == 0) {
-				DHT1DCuda(data.data(), _d_hartley_matrix_x, cols());
+				DHT1DCuda(data.data(), _d_hartley_matrix, cols());
 			}
 			else if (depth() == 0) {
-				DHT2DCuda(data.data());
+				DHT2DCuda(data.data(), _d_hartley_matrix, cols());
 			}
 			break;
 
@@ -304,7 +311,7 @@ namespace RapiDHT {
 		std::copy(vec.begin(), vec.end(), first);
 	}
 
-	void HartleyTransform::BracewellTransform2D(std::vector<double>& image, size_t cols, size_t rows) {
+	void HartleyTransform::BracewellTransform2DCPU(std::vector<double>& image, size_t cols, size_t rows) {
 		PROFILE_FUNCTION();
 		std::vector<double> H(rows * cols, 0.0);
 	#pragma omp parallel for
@@ -361,7 +368,7 @@ namespace RapiDHT {
 		}
 
 		transpose(image, rows, cols);
-		BracewellTransform2D(image, cols, rows);
+		BracewellTransform2DCPU(image, cols, rows);
 
 		// writeMatrixToCSV(image_ptr, rows, cols, "matrix2.txt");
 	}
@@ -460,7 +467,7 @@ namespace RapiDHT {
 		return;
 	}
 
-	void HartleyTransform::DHT1DCuda(double* h_x, const dev_array<double>& d_A, int length) {
+	void HartleyTransform::DHT1DCuda(double* h_x, const dev_array<double>& d_A, size_t length) {
 		// Allocate memory on the device
 		dev_array<double> d_x(length);			// input vector
 		dev_array<double> d_y(length);			// output vector
@@ -475,20 +482,21 @@ namespace RapiDHT {
 		cudaDeviceSynchronize();
 	}
 
-	void HartleyTransform::DHT2DCuda(double* h_X) {
+	void HartleyTransform::DHT2DCuda(double* h_X, const dev_array<double>& d_A, size_t cols) {
 		// Allocate memory on the device
-		dev_array<double> d_X(rows() * cols()); // one slice
-		dev_array<double> d_Y(rows() * cols()); // one slice
+		dev_array<double> d_X(cols * cols); // one slice
+		dev_array<double> d_Y(cols * cols); // one slice
 
 		// transfer CPU -> GPU
-		d_X.set(&h_X[0], rows() * cols());
-		matrixMultiplication(_d_hartley_matrix_x.getData(), d_X.getData(), d_Y.getData(), cols());
-		matrixTranspose(d_Y.getData(), cols());
-		matrixMultiplication(_d_hartley_matrix_x.getData(), d_Y.getData(), d_X.getData(), cols());
-		matrixTranspose(d_X.getData(), cols());
+		d_X.set(&h_X[0], cols * cols);
+		matrixMultiplication(d_A.getData(), d_X.getData(), d_Y.getData(), cols);
+		matrixTranspose(d_Y.getData(), cols);
+		matrixMultiplication(d_A.getData(), d_Y.getData(), d_X.getData(), cols);
+		matrixTranspose(d_X.getData(), cols);
+		BracewellTransform2D(d_X.getData(), cols, cols);
 
 		// transfer GPU -> CPU
-		d_X.get(&h_X[0], rows() * cols());
+		d_X.get(&h_X[0], cols * cols);
 		cudaDeviceSynchronize();
 	}
 }

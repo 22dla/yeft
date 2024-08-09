@@ -7,9 +7,9 @@
 
 int main(int argc, char** argv) {
 
-	size_t cols = static_cast<size_t>(pow(2, 5));
-	size_t rows = static_cast<size_t>(pow(2, 5));
-	RapiDHT::Modes mode = RapiDHT::CPU;
+	size_t cols = static_cast<size_t>(pow(2, 12));
+	size_t rows = static_cast<size_t>(pow(2, 12));
+	RapiDHT::Modes mode = RapiDHT::GPU;
 
 	// Обрабатываем аргументы командной строки, если они есть
 	auto args_map = parseCommandLine(argc, argv);
