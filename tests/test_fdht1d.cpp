@@ -20,6 +20,7 @@ int main(int argc, char** argv) {
 	std::cout << "Mode: " << (mode == RapiDHT::CPU ? "CPU" :
 		mode == RapiDHT::GPU ? "GPU" : "RFFT") << std::endl;
 
+	// Задаем начальные данные
 	auto a1_1 = makeData<double>({ rows });
 	auto a1_2 = makeData<double>({ rows });
 	//printData1D(a1);
@@ -27,8 +28,8 @@ int main(int argc, char** argv) {
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
+	// Считываем преобразование Харли
 	RapiDHT::HartleyTransform ht(rows, 0, 0, mode);
-	
 	ht.ForwardTransform(a1_1);
 	ht.InverseTransform(a1_1);
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv) {
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	showTime(common_start, common_finish, "Common time");
 
+	// Считаем ошибку
 	double sum = std::transform_reduce(
 		a1_1.begin(), a1_1.end(), a1_2.begin(), 0.0,
 		std::plus<>(),
