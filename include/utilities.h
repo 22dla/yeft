@@ -9,6 +9,8 @@
 #include <optional>
 #include <rapidht.h>
 
+#define DEBUG
+
 #ifdef DEBUG
 #define PROFILE_FUNCTION() Profiler __profiler(__FUNCTION__)
 #else
@@ -22,7 +24,7 @@ public:
 	~Profiler() {
 		auto endTime = std::chrono::high_resolution_clock::now();
 		auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - m_startTime).count();
-		std::cout << m_functionName << " took " << duration << " microseconds" << std::endl;
+		std::cout << m_functionName << " took " << duration / 1e6 << " seconds" << std::endl;
 	}
 private:
 	std::string m_functionName;
