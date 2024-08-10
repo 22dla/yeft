@@ -2,6 +2,8 @@
 #include "device_launch_parameters.h"
 #include "dev_array.h"
 
+#define TILE_SIZE 16  // Размер блока (мозаики)
+
 __global__ void matrixMultiplicationKernel(const double* A, const double* B, double* C, int N) {
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,13 +34,24 @@ __global__ void matrixVectorMultKernel(const double* A, const double* x, double*
 }
 
 __global__ void matrixTransposeKernel(double* A, int N) {
-	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	int j = blockIdx.y * blockDim.y + threadIdx.y;
-	if (i < N && j < N && i < j) {
-		double tmp = A[i * N + j];
-		A[i * N + j] = A[j * N + i];
-		A[j * N + i] = tmp;
-	}
+    __shared__ double tile[TILE_SIZE][TILE_SIZE];
+
+    int x = blockIdx.x * TILE_SIZE + threadIdx.x;
+    int y = blockIdx.y * TILE_SIZE + threadIdx.y;
+    int idx = y * N + x;
+
+    if (x < N && y < N) {
+        tile[threadIdx.y][threadIdx.x] = A[idx];
+    }
+    __syncthreads();
+
+    x = blockIdx.y * TILE_SIZE + threadIdx.x;
+    y = blockIdx.x * TILE_SIZE + threadIdx.y;
+    idx = y * N + x;
+
+    if (x < N && y < N) {
+        A[idx] = tile[threadIdx.x][threadIdx.y];
+    }
 }
 
 __global__ void BracewellTransform2DKernel(double* d_image, size_t cols, size_t rows) {
@@ -46,16 +59,22 @@ __global__ void BracewellTransform2DKernel(double* d_image, size_t cols, size_t 
     int j = blockIdx.x * blockDim.x + threadIdx.x;
 
     if (i < rows && j < cols) {
-        double A = d_image[i * cols + j];
-        double B = (i > 0 && j > 0) ? d_image[i * cols + (cols - j)] : A;
-        double C = (i > 0 && j > 0) ? d_image[(rows - i) * cols + j] : A;
-        double D = (i > 0 && j > 0) ? d_image[(rows - i) * cols + (cols - j)] : A;
-        d_image[i * cols + j] = (A + B + C - D) / 2.0;
+        int top_left = i * cols + j;
+        int top_right = i * cols + (cols - j - 1);
+        int bottom_left = (rows - i - 1) * cols + j;
+        int bottom_right = (rows - i - 1) * cols + (cols - j - 1);
+
+        double A = d_image[top_left];
+        double B = (i < rows && j < cols) ? d_image[top_right] : A;
+        double C = (i < rows && j < cols) ? d_image[bottom_left] : A;
+        double D = (i < rows && j < cols) ? d_image[bottom_right] : A;
+
+        d_image[top_left] = (A + B + C - D) / 2.0;
     }
 }
 
 void matrixMultiplication(const double *A, const double *B, double *C, int N) {
-	dim3 threadsPerBlock(16, 16);
+	dim3 threadsPerBlock(TILE_SIZE, TILE_SIZE);
     dim3 blocksPerGrid((N + threadsPerBlock.x - 1) / threadsPerBlock.x,
                        (N + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
@@ -72,8 +91,6 @@ void vectorMatrixMultiplication(const double* A, const double* x, double* y, int
 }
 
 void matrixTranspose(double* A, int N) {
-	// declare the number of blocks per grid and the number of threads per block
-	// use 1 to 512 threads per block
 	dim3 threadsPerBlock(N, N);
 	dim3 blocksPerGrid(1, 1);
 	if (N * N > 512) {
@@ -89,9 +106,10 @@ void matrixTranspose(double* A, int N) {
 	matrixTransposeKernel <<< blocksPerGrid, threadsPerBlock >> > (A, N);
 }
 
-void BracewellTransform2D(double* d_image, int cols, int rows) {
-    dim3 threadsPerBlock(32, 32);
-    dim3 blocksPerGrid((cols + 31) / 32, (rows + 31) / 32);
+void BracewellTransform2D(double* d_image, int N) {
+	int threadsPerBlock, blocksPerGrid;
+	threadsPerBlock = (N > 512) ? 512 : N;
+	blocksPerGrid = (N > 512) ? (N + threadsPerBlock - 1) / threadsPerBlock : 1;
 
-    BracewellTransform2DKernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, cols, rows);
+    BracewellTransform2DKernel<<<blocksPerGrid, threadsPerBlock>>>(d_image, N, N);
 }

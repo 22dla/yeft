@@ -6,6 +6,6 @@
 void matrixMultiplication(const double *A, const double *B, double *C, int N);
 void vectorMatrixMultiplication(const double* A, const double* B, double* C, int N);
 void matrixTranspose(double* A, int N);
-void BracewellTransform2D(double* A, int cols, int rows);
+void BracewellTransform2D(double* A, int N);
 
 #endif

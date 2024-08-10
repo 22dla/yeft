@@ -483,6 +483,7 @@ namespace RapiDHT {
 	}
 
 	void HartleyTransform::DHT2DCuda(double* h_X, const dev_array<double>& d_A, size_t cols) {
+		PROFILE_FUNCTION();
 		// Allocate memory on the device
 		dev_array<double> d_X(cols * cols); // one slice
 		dev_array<double> d_Y(cols * cols); // one slice
@@ -493,7 +494,7 @@ namespace RapiDHT {
 		matrixTranspose(d_Y.getData(), cols);
 		matrixMultiplication(d_A.getData(), d_Y.getData(), d_X.getData(), cols);
 		matrixTranspose(d_X.getData(), cols);
-		BracewellTransform2D(d_X.getData(), cols, cols);
+		BracewellTransform2D(d_X.getData(), cols);
 
 		// transfer GPU -> CPU
 		d_X.get(&h_X[0], cols * cols);
