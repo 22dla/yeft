@@ -34,7 +34,7 @@ int main(int argc, char** argv) {
 	}
 
 	auto a1_1 = make_data<double>({ rows });
-	auto a1_2 = make_data<double>({ rows });
+	auto a1_2 = a1_1;
 	//print_data_1d(a1_1.data(), rows);
 
 	auto ptr = a1_1.data();
