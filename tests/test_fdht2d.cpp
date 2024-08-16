@@ -3,12 +3,13 @@
 #include <utilities.h>
 #include <cmath>
 #include <cstring>
+#include <numeric>
 
 int main(int argc, char** argv) {
 	// Define global 3D array sizes
-	int rows = static_cast<int>(pow(2, 3));
+	int rows = static_cast<int>(pow(2, 13));
 	int cols = rows;
-	RapiDHT::Modes mode = RapiDHT::CPU;
+	RapiDHT::Modes mode = RapiDHT::GPU;
 
 	// If arguments are parced then exactly two arguments are required
 	if (argc >= 2) {
@@ -34,21 +35,29 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a3 = make_data<double>({ rows, cols });
+	auto a2_1 = make_data<double>({ rows, cols });
+	auto a2_2(a2_1);
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
 
-	auto ptr = a3.data();
+	auto ptr = a2_1.data();
 
-	print_data_2d(ptr, rows, cols);
+	//print_data_2d(ptr, rows, cols);
 
 	RapiDHT::HartleyTransform ht(rows, cols, 0, mode);
 	ht.ForwardTransform(ptr);
+	ht.InverseTransform(ptr);
 
-	print_data_2d(ptr, rows, cols);
+	//print_data_2d(ptr, rows, cols);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	show_time(common_start, common_finish, "Common time");
+
+	double sum_sqr = std::transform_reduce(
+		a2_1.begin(), a2_1.end(), a2_2.begin(), 0.0, std::plus<>(),
+		[](double x, double y) { return (x - y) * (x - y); }
+	);
+	std::cout << "Error:\t" << std::sqrt(sum_sqr) << std::endl;
 	return 0;
 }
