@@ -2,11 +2,12 @@
 #include <utilities.h>
 #include <iostream>
 #include <cmath>
+#include <numeric>
 #include <cstring>
 
 int main(int argc, char** argv) {
-	int rows = static_cast<int>(pow(2, 2));
-	RapiDHT::Modes mode = RapiDHT::CPU;
+	int rows = static_cast<int>(pow(2, 14));
+	RapiDHT::Modes mode = RapiDHT::GPU;
 
 	// If arguments is parced then exactly one argument is required
 	if (argc >= 2) {
@@ -32,11 +33,11 @@ int main(int argc, char** argv) {
 		}
 	}
 
-	auto a1 = make_data<double>({ rows });
-	auto a2 = make_data<double>({ rows });
-	//print_data_1d(a1);
+	auto a1_1 = make_data<double>({ rows });
+	auto a1_2 = make_data<double>({ rows });
+	//print_data_1d(a1_1.data(), rows);
 
-	auto ptr = a1.data();
+	auto ptr = a1_1.data();
 
 	double common_start, common_finish;
 	common_start = clock() / static_cast<double>(CLOCKS_PER_SEC);
@@ -46,17 +47,16 @@ int main(int argc, char** argv) {
 	ht.ForwardTransform(ptr);
 	ht.InverseTransform(ptr);
 
-	//print_data_1d(a1);
+	//print_data_1d(a1_1.data(), rows);
 
 	common_finish = clock() / static_cast<double>(CLOCKS_PER_SEC);
 	show_time(common_start, common_finish, "Common time");
 
-	double sum = 0;
-	for (int i = 0; i < rows; ++i) {
-		sum += std::abs(a2[i] - ptr[i]);
-		//std::cout << i << " " << a2[i] << " " << ptr[i] << " " << std::abs(a2[i] - ptr[i]) << std::endl;
-	}
-	std::cout << "Error:\t" << sum << std::endl;
+	double sum_sqr = std::transform_reduce(
+		a1_1.begin(), a1_1.end(), a1_2.begin(), 0.0, std::plus<>(),
+		[](double x, double y) { return (x - y)*(x - y); }
+	);
+	std::cout << "Error:\t" << std::sqrt(sum_sqr) << std::endl;
 
 	return 0;
 }
