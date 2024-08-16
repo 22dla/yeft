@@ -2,6 +2,7 @@
 set(TESTS
   test_fdht1d
   test_fdht2d
+  test_fdht3d
   test_fdhtnd
 )
 
