@@ -46,7 +46,9 @@ void HartleyTransform::InverseTransform(double* data) {
 	} else {							// 3D
 		denominator = 1.0f / (rows_ * cols_ * depth_);
 	}
-	for (int i = 0; i < rows_; ++i) {
+
+	size_t size = (depth_ > 0) ? rows_ * cols_ * depth_ : ((cols_ > 0) ? rows_ * cols_ : rows_);
+	for (int i = 0; i < size; ++i) {
 		data[i] *= denominator;
 	}
 }
@@ -241,6 +243,24 @@ void HartleyTransform::FDHT1D(double* vec, const Directions direction) {
 	}
 }
 
+void HartleyTransform::BracewellTransform2DCPU(double* image_ptr) {
+	//PROFILE_FUNCTION();
+	std::vector<double> H(rows_ * cols_, 0.0);
+#pragma omp parallel for
+	for (int i = 0; i < rows_; ++i) {
+		for (int j = 0; j < cols_; ++j) {
+			double A = image_ptr[i * cols_ + j];
+			double B = (i > 0 && j > 0) ? image_ptr[i * cols_ + (cols_ - j)] : A;
+			double C = (i > 0 && j > 0) ? image_ptr[(rows_ - i) * cols_ + j] : A;
+			double D = (i > 0 && j > 0) ? image_ptr[(rows_ - i) * cols_ + (cols_ - j)] : A;
+			H[i * cols_ + j] = (A + B + C - D) / 2.0;
+		}
+	}
+
+	//image = std::move(H);
+	std::copy(H.begin(), H.end(), image_ptr);
+}
+
 void HartleyTransform::FDHT2D(double* image_ptr) {
 	if (image_ptr == nullptr) {
 		std::cout << "The pointer to image is null." << std::endl;
@@ -262,6 +282,8 @@ void HartleyTransform::FDHT2D(double* image_ptr) {
 	this->series1d(image_ptr, DIRECTION_Y);
 
 	transpose_simple(image_ptr, cols_, rows_);
+
+	BracewellTransform2DCPU(image_ptr);
 
 	// write_matrix_to_csv(image_ptr, rows, cols, "matrix2.txt");
 }

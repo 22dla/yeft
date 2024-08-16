@@ -94,6 +94,7 @@ namespace RapiDHT {
 		template <typename T>
 		static void transpose(std::vector<std::vector<T>>* image);
 		static void transpose_simple(double* image, int rows, int cols);
+		void BracewellTransform2DCPU(double* image_ptr);
 
 		size_t* choose_reverced_indices(int* length, const Directions direction);
 
